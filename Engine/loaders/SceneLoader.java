@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 
 import extra.Camera;
-import gane.main;
 import gane.WorldSettings; 
 import scene.Entity;
 import scene.Scene;
