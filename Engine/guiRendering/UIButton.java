@@ -68,15 +68,19 @@ public class UIButton {
 
     /**
      * Fare konumunu ve tıklama durumunu işler.
-     * Oyun döngüsünde her karede render öncesinde çağrılmalıdır.
-     *
-     * @param mouseX    Farenin ekrandaki X koordinatı
-     * @param mouseY    Farenin ekrandaki Y koordinatı (yukarıdan aşağı)
-     * @param mouseDown Sol fare tuşu basılıysa true
+     * 
+     * @param mouseX    Farenin ekran X'i
+     * @param mouseY    Farenin ekran Y'i
+     * @param mouseDown Tıklama durumu
+     * @param winX      Pencerenin X konumu
+     * @param winY      Pencerenin Y konumu
      */
-    public void update(int mouseX, int mouseY, boolean mouseDown) {
-        hovered = mouseX >= x && mouseX <= x + width
-               && mouseY >= y && mouseY <= y + height;
+    public void update(int mouseX, int mouseY, boolean mouseDown, int winX, int winY) {
+        int absX = winX + x;
+        int absY = winY + y;
+        
+        hovered = mouseX >= absX && mouseX <= absX + width
+               && mouseY >= absY && mouseY <= absY + height;
 
         if (hovered && mouseDown && !wasPressed) {
             if (onClick != null) onClick.run();
@@ -87,23 +91,26 @@ public class UIButton {
     }
 
     /**
-     * Butonu ekrana çizer. UIManager'ın beginUI() ile açtığı 2D blok içinde çağrılmalıdır.
-     *
-     * @param ui Çizim için kullanılacak OpenGL yazı motoru
+     * Butonu ekrana çizer.
+     * 
+     * @param ui   Çizim motoru
+     * @param winX Pencerenin X konumu
+     * @param winY Pencerenin Y konumu
      */
-    public void render(OpenglYaziCizimi ui) {
+    public void render(OpenglYaziCizimi ui, int winX, int winY) {
+        int absX = winX + x;
+        int absY = winY + y;
+        
         Color bg     = hovered ? theme.getButtonHovered() : theme.getButtonNormal();
         Color border = theme.getButtonBorder();
         Color label  = theme.getButtonLabelColor();
-        int bw = 2; // Border genişliği (piksel)
+        int bw = 2;
 
-        // 1. Dış kenarlık
-        ui.drawPanel(x - bw, y - bw, width + bw * 2, height + bw * 2, border);
-        // 2. Arka plan
-        ui.drawPanel(x, y, width, height, bg);
-        // 3. Merkeze yakın etiket
-        int tx = x + width / 2 - this.label.length() * 7;
-        int ty = y + height / 2 - 6;
+        ui.drawPanel(absX - bw, absY - bw, width + bw * 2, height + bw * 2, border);
+        ui.drawPanel(absX, absY, width, height, bg);
+        
+        int tx = absX + width / 2 - this.label.length() * 7;
+        int ty = absY + height / 2 - 6;
         ui.drawText(this.label, tx, ty, label);
     }
 

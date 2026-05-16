@@ -15,22 +15,22 @@ import org.lwjgl.opengl.Display;
  * özelleştirebilir.
  *
  * Kullanım:
- *   // Varsayılan tema ile (dark):
- *   UIManager ui = new UIManager();
+ * // Varsayılan tema ile (dark):
+ * UIManager ui = new UIManager();
  *
- *   // Hazır bir tema ile:
- *   UIManager ui = new UIManager(UITheme.neon());
+ * // Hazır bir tema ile:
+ * UIManager ui = new UIManager(UITheme.neon());
  *
- *   // Özelleştirilmiş tema:
- *   UITheme myTheme = UITheme.dark().setPanelBackground(new Color(10, 0, 20));
- *   UIManager ui = new UIManager(myTheme);
+ * // Özelleştirilmiş tema:
+ * UITheme myTheme = UITheme.dark().setPanelBackground(new Color(10, 0, 20));
+ * UIManager ui = new UIManager(myTheme);
  *
- *   // Buton ekle:
- *   ui.addButton(60, 110, 200, 48, "Tamam", () -> ui.showMessage("Merhaba!"));
+ * // Buton ekle:
+ * ui.addButton(60, 110, 200, 48, "Tamam", () -> ui.showMessage("Merhaba!"));
  *
- *   // Oyun döngüsünde:
- *   ui.update();
- *   ui.render();
+ * // Oyun döngüsünde:
+ * ui.update();
+ * ui.render();
  */
 public class UIManager {
 
@@ -53,6 +53,10 @@ public class UIManager {
     /** Pencere pozisyonu ve boyutu */
     private int winX = 40, winY = 40, winW = 320, winH = 200;
 
+    // surukleme durumu
+    private boolean dragging = false;
+    private int dragoffsetX, dragoffsetY;
+
     /**
      * Varsayılan (dark) tema ile UIManager oluşturur.
      * Display başlatıldıktan SONRA çağrılmalıdır.
@@ -67,7 +71,7 @@ public class UIManager {
      * @param theme Kullanılacak görsel şablon
      */
     public UIManager(UITheme theme) {
-        this.theme    = (theme != null) ? theme : UITheme.dark();
+        this.theme = (theme != null) ? theme : UITheme.dark();
         this.renderer = new OpenglYaziCizimi();
         this.renderer.init();
     }
@@ -99,7 +103,7 @@ public class UIManager {
      * @param message Gösterilecek metin
      */
     public void showMessage(String message) {
-        this.infoMessage     = message;
+        this.infoMessage = message;
         this.infoMessageTime = System.currentTimeMillis();
     }
 
@@ -133,8 +137,10 @@ public class UIManager {
      * @param h Pencere yüksekliği (piksel)
      */
     public void setWindowBounds(int x, int y, int w, int h) {
-        this.winX = x; this.winY = y;
-        this.winW = w; this.winH = h;
+        this.winX = x;
+        this.winY = y;
+        this.winW = w;
+        this.winH = h;
     }
 
     // ─── Güncelleme ve Çizim ─────────────────────────────────────────────
@@ -144,12 +150,32 @@ public class UIManager {
      * Oyun döngüsünde renderdan ÖNCE çağrılmalıdır.
      */
     public void update() {
-        int mouseX    = Mouse.getX();
-        int mouseY    = Display.getHeight() - Mouse.getY(); // Y'yi ters çevir
-        boolean down  = Mouse.isButtonDown(0);
+        int mouseX = Mouse.getX();
+        int mouseY = Display.getHeight() - Mouse.getY(); // Y'yi ters çevir
+        boolean down = Mouse.isButtonDown(0);
+
+        // --- pencere surukleme
+        // Baslik Cubugu alani winX, winY > winX+winW, winY + titleBarHeight
+        boolean inTitleBar = mouseX >= winX && mouseX <= winX + winW
+                && mouseY >= winY && mouseY <= winY + theme.getTitleBarHeight();
+        
+        if (inTitleBar && down && !dragging) {
+            dragging = true;
+            dragoffsetX = mouseX - winX; // Farenin pencere içindeki offset'i
+            dragoffsetY = mouseY - winY;
+        }
+        
+        if (!down) {
+            dragging = false;
+        }
+        
+        if (dragging) {
+            winX = mouseX - dragoffsetX; // Pencere konumunu güncelle
+            winY = mouseY - dragoffsetY;
+        }
 
         for (UIButton btn : buttons) {
-            btn.update(mouseX, mouseY, down);
+            btn.update(mouseX, mouseY, down, winX, winY);
         }
 
         if (infoMessage != null
@@ -188,15 +214,15 @@ public class UIManager {
 
         // 6. Butonlar
         for (UIButton btn : buttons) {
-            btn.render(renderer);
+            btn.render(renderer, winX, winY);
         }
 
         // 7. Bilgi mesajı
         if (infoMessage != null) {
             int charW = 14;
-            int msgW  = infoMessage.length() * charW;
-            int msgX  = Display.getWidth()  / 2 - msgW / 2;
-            int msgY  = Display.getHeight() / 2 - 40;
+            int msgW = infoMessage.length() * charW;
+            int msgX = Display.getWidth() / 2 - msgW / 2;
+            int msgY = Display.getHeight() / 2 - 40;
             renderer.drawPanel(msgX - 20, msgY - 12, msgW + 40, 52,
                     theme.getPanelBackground());
             renderer.drawPanel(msgX - 22, msgY - 14, msgW + 44, 56,
