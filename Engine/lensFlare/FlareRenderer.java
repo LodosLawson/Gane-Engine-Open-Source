@@ -10,31 +10,35 @@ import openglObjects.Vao;
 import utils.OpenGlUtils;
 
 /**
- * 
- * Renders 2D textured quads onto the screen.
+ * Ekran üzerine 2 Boyutlu dokulanmış (textured) dörtgenler (quad) çizer.
+ * Mercek parlamalarının render edilmesinden sorumludur.
  * 
  * @author Karl
- *
  */
 public class FlareRenderer {
 
-	// 4 vertex positions for a 2D quad.
+	// 2D dörtgen için 4 köşenin (vertex) pozisyonları.
 	private static final float[] POSITIONS = { -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f, -0.5f };
 
+	// Güneşin arkada kalıp kalmadığını kontrol etmek için yapılan test dörtgeninin boyutları
 	private static final float TEST_QUAD_WIDTH = 0.07f;
 	private static final float TEST_QUAD_HEIGHT = TEST_QUAD_WIDTH * (float) Display.getWidth() / Display.getHeight();
+	// Test sırasında oluşacak maksimum sample miktarı
 	private static final float TOTAL_SAMPLES = (float) Math.pow(TEST_QUAD_WIDTH * Display.getWidth() * 0.5f, 2) * 4;
 
-	// A VAO containing the quad's positions in attribute 0
+	// Dörtgenin pozisyonlarını 0 numaralı attribute içinde tutan VAO (Vertex Array Object)
 	private final Vao quad;
+	// Parlama shader programı
 	private final FlareShader shader;
+	// OpenGL Occlusion Query objesi: Güneşin kaç pikselinin ekranda göründüğünü hesaplar
 	private final Query query;
 
+	// Parlaklık kapsamı (0.0 hiç görünmüyor, 1.0 tamamen görünüyor)
 	private float coverage = 0;
 	
 	/**
-	 * Initializes the shader program, and creates a VAO for the quad, storing
-	 * the data for the 4 quad vertices in attribute 0 of the VAO.
+	 * Shader programını ilklendirir, dörtgen için VAO oluşturur ve
+	 * 4 dörtgen köşesi bilgisini VAO'nun 0. attribute'una kaydeder.
 	 */
 	public FlareRenderer() {
 		this.shader = new FlareShader();
@@ -46,20 +50,19 @@ public class FlareRenderer {
 	}
 
 	/**
-	 * Renders FlareTextures onto the screen at their positions, at the
-	 * specified brightness.
+	 * Belirtilen parlaklıkta FlareTexture'ları ekran konumlarına göre render eder.
 	 * 
-	 * @param flares
-	 *            - An array of the FlareTextures that need to be rendered to
-	 *            the screen.
-	 * @param brightness
-	 *            - The brightness that all the FlareTextures should be rendered
-	 *            at.
+	 * @param sunScreenPos Güneşin ekrandaki x,y pozisyonu
+	 * @param flares       Ekrana çizilecek olan FlareTexture'ların bir dizisi
+	 * @param brightness   Bütün FlareTexture'ların alacağı temel parlaklık değeri
 	 */
 	public void render(Vector2f sunScreenPos, FlareTexture[] flares, float brightness) {
 		prepare(brightness);
+		// Güneşin herhangi bir objenin (örn: dağların) arkasında kalıp kalmadığını test et
 		doOcclusionTest(sunScreenPos);
+		// Eklemeli harmanlama (additive blending) aktif et
 		OpenGlUtils.enableAdditiveBlending();
+		// Parlamalar her zaman önde çizileceği için derinlik testini kapat
 		OpenGlUtils.enableDepthTesting(false);
 		for (FlareTexture flare : flares) {
 			renderFlare(flare);
@@ -67,12 +70,19 @@ public class FlareRenderer {
 		endRendering();
 	}
 
+	/**
+	 * Donanım düzeyinde, güneşin ekrandaki alanda herhangi bir şeyin (model, arazi vb.)
+	 * arkasında kalıp kalmadığını kontrol eder.
+	 * 
+	 * @param sunScreenCoords Güneşin ekran koordinatları
+	 */
 	private void doOcclusionTest(Vector2f sunScreenCoords) {
 		if(query.isResultReady()){
 			int visibleSamples = query.getResult();
 			this.coverage = Math.min(visibleSamples / TOTAL_SAMPLES, 1f);
 		}
 		if (!query.isInUse()) {
+			// Sadece derinlik testi yapacağız, ekrana renk çizmeyi ve derinliği değiştirmeyi kapat
 			GL11.glColorMask(false, false, false, false);
 			GL11.glDepthMask(false);
 			query.start();
@@ -80,13 +90,14 @@ public class FlareRenderer {
 			shader.transform.loadVec4(sunScreenCoords.x, sunScreenCoords.y, TEST_QUAD_WIDTH, TEST_QUAD_HEIGHT);
 			GL11.glDrawArrays(GL11.GL_TRIANGLE_STRIP, 0, 4);
 			query.end();
+			// Renk maskelerini ve derinlik maskesini geri aktif et
 			GL11.glColorMask(true, true, true, true);
 			GL11.glDepthMask(true);
 		}
 	}
 
 	/**
-	 * Cleans up the shader program. To be used when the application is closed.
+	 * Shader programını temizler. Uygulama kapandığında kullanılmalıdır.
 	 */
 	public void cleanUp() {
 		query.delete();
@@ -94,47 +105,42 @@ public class FlareRenderer {
 	}
 
 	/**
-	 * Prepares for rendering the FlareTextures. Antialiasing is disabled as it
-	 * isn't needed. Additive blending is enables so that transparent parts of
-	 * the texture aren't rendered, and to give the entire texture a "glowing"
-	 * look. Depth testing is also disabled because the flare textures should
-	 * always be rendered on top of everything else in the scene. For this
-	 * reason the lens flare effect MUST be rendered after rendering everything
-	 * else in the 3D scene (But render before GUIs if you want the GUIs to go
-	 * in front of the lens flare.) Backface culling also unnecessary here.
+	 * FlareTexture'ları çizmek için gerekli ön hazırlıkları yapar.
 	 * 
-	 * The shader program is also started, and the brightness value loaded up to
-	 * it as a uniform variable. The quad's VAO is bound, ready for use, and its
-	 * attribute 0 is enabled (attribute 0 contains the position data).
+	 * Antialiasing'e gerek olmadığı için kapatılır. Eklemeli harmanlama (Additive blending) 
+	 * açılır; böylece dokunun şeffaf yerleri gözükmez ve dokunun geneline "parlayan" bir
+	 * görünüm verilir. Derinlik testi (depth testing) devre dışı bırakılır çünkü parlama dokuları
+	 * sahnede her şeyin önüne çizilmelidir. Bu nedenle mercek parlaması (lens flare) efekti
+	 * 3B sahnedeki her şey çizildikten SONRA çağrılmalıdır. (Eğer GUI'lerin parlamanın önüne
+	 * geçmesini istiyorsanız parlamayı GUI'lerden ÖNCE çizmelisiniz.)
+	 * Arka yüzey gizlemeye (backface culling) bu işlemde gerek yoktur.
 	 * 
+	 * Shader programı başlatılır ve parlaklık değeri (brightness) uniform olarak shader'a yollanır.
+	 * Dörtgenin VAO'su bağlanarak kullanıma hazır hale getirilir.
 	 * 
-	 * @param brightness
-	 *            - the brightness at which the flares are going to be rendered.
+	 * @param brightness Parlamaların çizileceği temel parlaklık seviyesi.
 	 */
 	private void prepare(float brightness) {
 		OpenGlUtils.antialias(false);
 		shader.start();
+		// Parlaklık = hesaplanan baz parlaklık x görünürlük oranı
 		shader.brightness.loadFloat(brightness * coverage);
 		quad.bind(0);
 	}
 
 	/**
-	 * Renders a single flare texture to the screen on a textured 2D quad.
+	 * Tek bir parlama dokusunu ekrandaki kaplamalı (textured) 2 boyutlu dörtgen üzerine çizer.
 	 * 
-	 * The texture for this flare is first bound to texture unit 0. The x and y
-	 * scale of the quad is then determined. The x scale is simply the scale
-	 * value in the FlareTexture instance, and then the y scale is calculated by
-	 * multiplying that by the aspect ratio of the display. This ensures that
-	 * the quad is a square, and not a rectangle.
+	 * Dokunun 0. doku birimine (texture unit 0) bağlanmasıyla başlar. Dörtgenin x ve y
+	 * ölçekleri belirlenir. x ölçeği sadece FlareTexture'daki scale değeri iken,
+	 * y ölçeği bu değerin ekranın en/boy oranıyla (aspect ratio) çarpılmasıyla hesaplanır.
+	 * Böylece dörtgenin dikdörtgen değil tam bir kare olması sağlanır.
 	 * 
-	 * The position and scale is then loaded up the the shader. Finally, the
-	 * quad is rendered using glDrawArrays (no index buffer used), and using
-	 * GL_TRIANGLE_STRIP. This allows the quad to be specified using only 4
-	 * vertex positions, instead of having to specify the 6 vertex positions for
-	 * the 2 triangles. See GUI tutorial for more info.
+	 * Sonrasında konum ve ölçek shader'a yüklenir. Son olarak dörtgen, glDrawArrays kullanılarak
+	 * (indeks tamponu kullanılmadan) ve GL_TRIANGLE_STRIP kullanılarak çizilir. Bu teknik sayesinde
+	 * 2 üçgen için 6 köşe belirlemek yerine, sadece 4 köşe ile dörtgen tanımlanabilmektedir.
 	 * 
-	 * @param flare
-	 *            - The flare to be rendered.
+	 * @param flare Çizilecek olan parlama objesi.
 	 */
 	private void renderFlare(FlareTexture flare) {
 		flare.getTexture().bindToUnit(0);
@@ -146,8 +152,8 @@ public class FlareRenderer {
 	}
 
 	/**
-	 * Unbind the quad VAO, stop the shader program, and undo any settings that
-	 * were changed before rendering.
+	 * Dörtgenin VAO bağını çözer, shader programını durdurur ve çizim öncesi değiştirilen
+	 * ayarlamaları eski haline getirir.
 	 */
 	private void endRendering() {
 		quad.unbind(0);

@@ -1,24 +1,43 @@
 #version 150
 
+// 3D modelden gelen köşe (vertex) koordinatları.
 in vec3 in_position;
+// 3D modelden gelen texture (kaplama) koordinatları.
 in vec2 in_textureCoords;
+// Yüzeyin baktığı yön (ışık hesabı için gereklidir).
 in vec3 in_normal;
 
+// Fragment shader'a aktarılacak texture koordinatları.
 out vec2 pass_textureCoords;
+// Fragment shader'a aktarılacak parlaklık değeri.
 out float pass_brightness;
+// Fragment shader'a aktarılacak dünya pozisyonu.
 out vec2 pass_pos;
 
+// Kamera ve nesne konumunu içeren dönüşüm matrisi.
 uniform mat4 projectionViewMatrix;
+// Işığın yönü (güneşin geliş açısı vb.).
 uniform vec3 lightDirection;
+// Kırpma düzlemi (su yansımaları için suyun üstünü veya altını kırpmaya yarar).
 uniform vec4 plane;
 
+// Shader'ın ana fonksiyonu. Her bir köşe (vertex) için çalışır.
 void main(void){
 
+	// Nesnenin dünya üzerindeki pozisyonu.
 	vec4 worldPosition = vec4(in_position, 1.0);
 	pass_pos = worldPosition.xz;
+	
+	// Köşenin ekrandaki son pozisyonunu hesapla.
 	gl_Position = projectionViewMatrix * worldPosition;
+	
+	// Eğer kırpma düzleminin altındaysa/üstündeyse bu yüzeyi çizme.
 	gl_ClipDistance[0] = dot(worldPosition, plane);
+	
+	// Kaplama koordinatlarını direkt fragment shader'a geçir.
 	pass_textureCoords = in_textureCoords;
+	
+	// Işık yönü ve yüzey normalini kullanarak yüzeyin ne kadar ışık aldığını (parlaklığını) hesapla.
 	pass_brightness = max(dot(-lightDirection, normalize(in_normal)), 0.0) * 0.8 + 0.5;
 
 }
