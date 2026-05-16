@@ -3,59 +3,64 @@ package guiRendering;
 import java.awt.Color;
 
 /**
- * OpenGL üzerinde çizilen, tıklanabilir bir 2D buton bileşeni.
- * 
- * Nasıl Kullanılır:
- *   UIButton btn = new UIButton(100, 200, 200, 50, "Tıkla");
- *   btn.setOnClick(() -> System.out.println("Hello World"));
- *   // Oyun döngüsünde:
- *   btn.update(mouseX, mouseY, mousePressed);
+ * OpenGL üzerinde çizilen, tıklanabilir ve temalı (UITheme) 2D buton bileşeni.
+ *
+ * Butonun renk ve görünümü tamamen bağlı olduğu UITheme'den okunur.
+ * Tema değiştirilirse buton otomatik olarak yeni temayı yansıtır.
+ *
+ * Kullanım:
+ *   UIButton btn = new UIButton(100, 200, 200, 50, "Tamam", myTheme);
+ *   btn.setOnClick(() -> System.out.println("Tıklandı!"));
+ *   // Döngüde:
+ *   btn.update(mouseX, mouseY, mouseDown);
  *   btn.render(ui);
  */
 public class UIButton {
 
-    /** Butonun ekrandaki X konumu (piksel) */
+    /** Butonun ekrandaki sol-üst köşe koordinatları (piksel) */
     private int x, y;
-    /** Butonun piksel cinsinden genişliği ve yüksekliği */
+    /** Butonun genişliği ve yüksekliği (piksel) */
     private int width, height;
-    /** Buton üzerinde gösterilecek metin etiketi */
+    /** Buton üzerindeki yazı etiketi */
     private String label;
 
     /** Fare butonun üzerindeyken true */
     private boolean hovered = false;
-    /** Butonun tıklanıp tıklanmadığını takip eder (tekrar tetiklenmeyi önler) */
+    /** Tıklama tekrarını önlemek için önceki tuş durumu */
     private boolean wasPressed = false;
 
-    /** Buton tıklandığında çalışacak aksiyonu tutan fonksiyon arayüzü */
+    /** Tıklama eylemi (Lambda veya Runnable) */
     private Runnable onClick;
 
-    // --- Renk sabitleri ---
-    private static final Color COLOR_NORMAL   = new Color(50, 50, 80, 210);
-    private static final Color COLOR_HOVERED  = new Color(80, 80, 140, 230);
-    private static final Color COLOR_BORDER   = new Color(120, 120, 200, 255);
-    private static final Color COLOR_LABEL    = new Color(230, 230, 255, 255);
+    /**
+     * Bu butonun görünümünü belirleyen şablon.
+     * Tema değiştirilebilir (setTheme).
+     */
+    private UITheme theme;
 
     /**
      * Yeni bir UIButton oluşturur.
      *
-     * @param x      Sol kenarın X koordinatı
-     * @param y      Üst kenarın Y koordinatı
-     * @param width  Butonun genişliği (piksel)
-     * @param height Butonun yüksekliği (piksel)
-     * @param label  Buton üzerindeki yazı
+     * @param x      Sol kenar X koordinatı (piksel)
+     * @param y      Üst kenar Y koordinatı (piksel)
+     * @param width  Genişlik (piksel)
+     * @param height Yükseklik (piksel)
+     * @param label  Buton üzerinde gösterilecek metin
+     * @param theme  Kullanılacak görsel tema (null ise dark() varsayılan alınır)
      */
-    public UIButton(int x, int y, int width, int height, String label) {
+    public UIButton(int x, int y, int width, int height, String label, UITheme theme) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
         this.label = label;
+        this.theme = (theme != null) ? theme : UITheme.dark();
     }
 
     /**
-     * Buton tıklandığında çalışacak eylemi (Action) tanımlar.
+     * Tıklama gerçekleştiğinde çalıştırılacak eylemi atar.
      *
-     * @param onClick Çalıştırılacak lambda veya Runnable
+     * @param onClick Lambda veya Runnable
      */
     public void setOnClick(Runnable onClick) {
         this.onClick = onClick;
@@ -63,49 +68,47 @@ public class UIButton {
 
     /**
      * Fare konumunu ve tıklama durumunu işler.
-     * Her karede (frame) oyun döngüsünden çağrılmalıdır.
+     * Oyun döngüsünde her karede render öncesinde çağrılmalıdır.
      *
-     * @param mouseX     Farenin ekrandaki X koordinatı
-     * @param mouseY     Farenin ekrandaki Y koordinatı
-     * @param mouseDown  Sol fare tuşu basılıysa true
+     * @param mouseX    Farenin ekrandaki X koordinatı
+     * @param mouseY    Farenin ekrandaki Y koordinatı (yukarıdan aşağı)
+     * @param mouseDown Sol fare tuşu basılıysa true
      */
     public void update(int mouseX, int mouseY, boolean mouseDown) {
-        // Fare butonun üzerinde mi?
         hovered = mouseX >= x && mouseX <= x + width
                && mouseY >= y && mouseY <= y + height;
 
         if (hovered && mouseDown && !wasPressed) {
-            // İlk kez basıldı: onClick tetikle
-            if (onClick != null) {
-                onClick.run();
-            }
+            if (onClick != null) onClick.run();
             wasPressed = true;
         } else if (!mouseDown) {
-            // Fare bırakıldı: tekrar tıklanmaya hazır
             wasPressed = false;
         }
     }
 
     /**
-     * Butonu ekrana çizer. OpenGL'in 2D modunun (beginUI/endUI) içinde çağrılmalıdır.
+     * Butonu ekrana çizer. UIManager'ın beginUI() ile açtığı 2D blok içinde çağrılmalıdır.
      *
-     * @param ui Yazı ve panel çizimine erişim sağlayan UI renderer
+     * @param ui Çizim için kullanılacak OpenGL yazı motoru
      */
     public void render(OpenglYaziCizimi ui) {
-        Color bg     = hovered ? COLOR_HOVERED : COLOR_NORMAL;
-        int borderW  = 2;
+        Color bg     = hovered ? theme.getButtonHovered() : theme.getButtonNormal();
+        Color border = theme.getButtonBorder();
+        Color label  = theme.getButtonLabelColor();
+        int bw = 2; // Border genişliği (piksel)
 
-        // 1. Dış kenarlık (border): biraz büyük, farklı renkte bir dikdörtgen
-        ui.drawPanel(x - borderW, y - borderW,
-                     width + borderW * 2, height + borderW * 2,
-                     COLOR_BORDER);
-
-        // 2. Buton arka planı
+        // 1. Dış kenarlık
+        ui.drawPanel(x - bw, y - bw, width + bw * 2, height + bw * 2, border);
+        // 2. Arka plan
         ui.drawPanel(x, y, width, height, bg);
+        // 3. Merkeze yakın etiket
+        int tx = x + width / 2 - this.label.length() * 7;
+        int ty = y + height / 2 - 6;
+        ui.drawText(this.label, tx, ty, label);
+    }
 
-        // 3. Etiket metni: ortalanmış (yaklaşık)
-        int textOffsetX = width / 2 - label.length() * 7;
-        int textOffsetY = height / 2 - 6;
-        ui.drawText(label, x + textOffsetX, y + textOffsetY, COLOR_LABEL);
+    /** Butonun bağlı olduğu temayı değiştirir */
+    public void setTheme(UITheme theme) {
+        this.theme = theme;
     }
 }
