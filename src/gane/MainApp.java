@@ -66,7 +66,9 @@ public class MainApp {
 
 		// 2. Basit sahne kur: sadece kamera, beyaz arkaplan ve hiçbir obje yok.
 		Camera camera = new Camera();
-		activeScene = new Scene(camera, null, false);
+		activeScene = new Scene(camera, null, true);
+		activeScene.getWater().clear();
+		activeScene.getWater().add(new water.WaterTile(0f, 0f, -2.0f));
 		activeScene.setLightDirection(new org.lwjgl.util.vector.Vector3f(-1f, 0f, 0f));
 		activeScene.setLightBrightness(1f);
 		activeScene.setAmbientLight(0.2f);

@@ -23,6 +23,8 @@ public class WaterShader extends ShaderProgram {
 
 	// Suyun dalgalanması için hareket çarpanı
 	protected UniformFloat moveFactor = new UniformFloat("moveFactor");
+	// Suyun dalgalanma gücü (Bükülme miktarı)
+	protected UniformFloat waveStrength = new UniformFloat("waveStrength");
 	// Fresnel etkisi (Görüş açısına göre yansıma oranı) için kamera konumu
 	protected UniformVec3 cameraPosition = new UniformVec3("cameraPosition");
 	// Suyun üzerindeki specular yansımaları için ışık yönü
@@ -40,7 +42,7 @@ public class WaterShader extends ShaderProgram {
 	 */
 	public WaterShader() {
 		super(VERTEX_SHADER, FRAGMENT_SHADER, "position");
-		super.storeAllUniformLocations(modelMatrix, viewMatrix, projectionMatrix, moveFactor,
+		super.storeAllUniformLocations(modelMatrix, viewMatrix, projectionMatrix, moveFactor, waveStrength,
 				cameraPosition, lightDirection, reflectionTexture, refractionTexture,
 				dudvMap, normalMap, depthMap);
 		connectTextureUnits();

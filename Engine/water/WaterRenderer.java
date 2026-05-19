@@ -22,7 +22,10 @@ public class WaterRenderer {
 
 	private static final MyFile DUDV_MAP = new MyFile("res", "waterDUDV.png");
 	private static final MyFile NORMAL_MAP = new MyFile("res", "normal.png");
-	// private static final float WAVE_SPEED = 0.03f;
+	
+	// Dalgaların hız ve kuvveti (MainApp veya diğer sınıflardan değiştirilebilir)
+	public static float waveSpeed = 0.0005f;
+	public static float waveStrength = 0.01f;
 
 	// Suyu çizeceğimiz düzlem (Quad)
 	private Vao quad;
@@ -61,7 +64,7 @@ public class WaterRenderer {
 	public void render(List<WaterTile> water, ICamera camera, Vector3f lightDir) {
 		prepareRender(camera, lightDir);
 		for (WaterTile tile : water) {
-			Matrix4f modelMatrix = createModelMatrix(tile.getX(), tile.getHeight(), tile.getZ(), WaterTile.TILE_SIZE);
+			Matrix4f modelMatrix = createModelMatrix(tile.getX(), tile.getHeight(), tile.getZ(), tile.getSize());
 			shader.modelMatrix.loadMatrix(modelMatrix);
 			GL11.glDrawElements(GL11.GL_TRIANGLES, quad.getIndexCount(), GL11.GL_UNSIGNED_INT, 0);
 		}
@@ -89,9 +92,10 @@ public class WaterRenderer {
 		shader.cameraPosition.loadVec3(camera.getPosition());
 
 		// Su dalgalarının akmasını sağlayan değeri artır
-		moveFactor += 0.0005f;
+		moveFactor += waveSpeed;
 		moveFactor %= 1; // Değerin 0 ile 1 arasında kalmasını sağla
 		shader.moveFactor.loadFloat(moveFactor);
+		shader.waveStrength.loadFloat(waveStrength);
 
 		shader.lightDirection.loadVec3(lightDir);
 

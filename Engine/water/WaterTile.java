@@ -11,6 +11,7 @@ public class WaterTile {
 	
 	private float height; // Suyun Y eksenindeki yüksekliği
 	private float x, z;   // Suyun Dünya (World) üzerindeki konumu
+	private float size;   // Suyun boyutu
 	
 	/**
 	 * Yeni bir su fayansı oluşturur.
@@ -20,10 +21,22 @@ public class WaterTile {
 	 * @param height Suyun yüksekliği (Deniz seviyesi)
 	 */
 	public WaterTile(float centerX, float centerZ, float height){
+		this(centerX, centerZ, height, TILE_SIZE);
+	}
+
+	/**
+	 * Özel boyutta yeni bir su fayansı oluşturur.
+	 * 
+	 * @param centerX Merkez X koordinatı
+	 * @param centerZ Merkez Z koordinatı
+	 * @param height Suyun yüksekliği (Deniz seviyesi)
+	 * @param size Suyun boyutu
+	 */
+	public WaterTile(float centerX, float centerZ, float height, float size){
 		this.x = centerX;
 		this.z = centerZ;
 		this.height = height;
-
+		this.size = size;
 	}
 
 	/** @return Suyun yüksekliği */
@@ -39,6 +52,11 @@ public class WaterTile {
 	/** @return Suyun merkez Z konumu */
 	public float getZ() {
 		return z;
+	}
+
+	/** @return Suyun boyutu */
+	public float getSize() {
+		return size;
 	}
 
 }
