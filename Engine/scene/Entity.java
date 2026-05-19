@@ -15,6 +15,10 @@ public class Entity {
 	private final Skin skin;
 	// Objenin 3B uzaydaki konumu
 	private final Vector3f position = new Vector3f(0, 0, 0);
+	// Objenin 3B uzaydaki dönme açısı (Derece cinsinden X, Y, Z)
+	private final Vector3f rotation = new Vector3f(0, 0, 0);
+	// Objenin ölçek çarpanı (Boyutu)
+	private float scale = 1.0f;
 	
 	// Fizik motoru ile etkileşimi sağlayacak bileşen (Yerçekimi, hız, kütle vb.)
 	private physics.PhysicsComponent physicsComponent;
@@ -61,6 +65,34 @@ public class Entity {
 	 */
 	public void setPosition(Vector3f position) {
 		this.position.set(position);
+	}
+
+	/** @return Objenin şu anki dönme açısını (X, Y, Z derece) döndürür */
+	public Vector3f getRotation() {
+		return rotation;
+	}
+
+	/**
+	 * Objenin uzaydaki dönme açısını değiştirir.
+	 * 
+	 * @param rotation Yeni x,y,z dönme açıları
+	 */
+	public void setRotation(Vector3f rotation) {
+		this.rotation.set(rotation);
+	}
+
+	/** @return Objenin ölçek çarpanını (Boyutunu) döndürür */
+	public float getScale() {
+		return scale;
+	}
+
+	/**
+	 * Objenin boyut ölçeğini değiştirir.
+	 * 
+	 * @param scale Yeni ölçek çarpanı
+	 */
+	public void setScale(float scale) {
+		this.scale = scale;
 	}
 	
 	/** Objenin barındırdığı modeli ve dokuyu ekran kartından siler */

@@ -158,6 +158,20 @@ public class MainApp {
 						camera.setMode(extra.Camera.CameraMode.THIRD_PERSON);
 						uiManager.showMessage("Kamera Modu: THIRD PERSON");
 					}
+
+					// --- ANİMASYON TETİKLEME KISAYOLU (SPACE) ---
+					if (Keyboard.getEventKey() == Keyboard.KEY_SPACE) {
+						for (var entity : activeScene.getAllEntities()) {
+							if (entity instanceof scene.GameObject) {
+								scene.GameObject go = (scene.GameObject) entity;
+								scene.AnimatorComponent anim = go.getComponent(scene.AnimatorComponent.class);
+								if (anim != null) {
+									anim.triggerAction();
+									uiManager.showMessage("Animasyon Tetiklendi! (Spin & Bounce)");
+								}
+							}
+						}
+					}
 				}
 			}
 			

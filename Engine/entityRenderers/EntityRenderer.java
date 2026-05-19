@@ -49,6 +49,23 @@ public class EntityRenderer {
 			org.lwjgl.util.vector.Matrix4f transform = new org.lwjgl.util.vector.Matrix4f();
 			transform.setIdentity();
 			org.lwjgl.util.vector.Matrix4f.translate(entity.getPosition(), transform, transform);
+			
+			// Rotation X, Y, Z (in degrees)
+			if (entity.getRotation().x != 0) {
+				org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getRotation().x), new org.lwjgl.util.vector.Vector3f(1, 0, 0), transform, transform);
+			}
+			if (entity.getRotation().y != 0) {
+				org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getRotation().y), new org.lwjgl.util.vector.Vector3f(0, 1, 0), transform, transform);
+			}
+			if (entity.getRotation().z != 0) {
+				org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getRotation().z), new org.lwjgl.util.vector.Vector3f(0, 0, 1), transform, transform);
+			}
+			
+			// Scale (uniformly)
+			if (entity.getScale() != 1.0f) {
+				org.lwjgl.util.vector.Matrix4f.scale(new org.lwjgl.util.vector.Vector3f(entity.getScale(), entity.getScale(), entity.getScale()), transform, transform);
+			}
+			
 			shader.transformationMatrix.loadMatrix(transform);
 			
 			model.bind(0, 1, 2);

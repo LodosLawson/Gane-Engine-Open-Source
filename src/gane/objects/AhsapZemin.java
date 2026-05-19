@@ -17,15 +17,19 @@ public class AhsapZemin extends GameObject {
 		
 		// Başlangıç lokasyonu (MainApp'te oluşturduğumuzda burada doğacak)
 		this.getPosition().set(-5f, 0f, -5f); 
+
+		// Modern Modüler Animasyon Bileşenini ekle
+		scene.AnimatorComponent animator = new scene.AnimatorComponent();
+		// Kendi etrafında sürekli Y ekseninde dönsün (derece/saniye)
+		animator.setContinuousRotation(0f, 45f, 0f);
+		// Sürekli havada süzülsün (hız, miktar)
+		animator.setBounceEffect(1.5f, 0.4f);
+		
+		this.addComponent(animator);
 	}
 
 	@Override
 	protected void onUpdate(float delta) {
-		// Objenin her saniye yapacağı hareket / mantık buraya yazılır.
-		// Örnek: Kendi ekseni etrafında hafifçe dönme ve havada süzülme (Bobbing efekti)
-		float time = System.currentTimeMillis() / 1000.0f;
-		
-		// Y ekseninde (yukarı-aşağı) yavaşça süzül
-		this.getPosition().y = (float) Math.sin(time * 2.0f) * 0.5f;
+		// onUpdate artık boş, tüm hareketler AnimatorComponent bileşeni tarafından yönetiliyor.
 	}
 }
