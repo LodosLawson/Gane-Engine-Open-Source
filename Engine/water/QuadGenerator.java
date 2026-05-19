@@ -9,8 +9,8 @@ import openglObjects.Vao;
 public class QuadGenerator {
 	
 	private static final int VERTEX_COUNT = 4;
-	// X ve Z koordinatları (Y ekseni shader içinde konumlandırılır)
-	private static final float[] VERTICES = {0, 0, 1, 0, 1, 1, 0, 1};
+	// X ve Z koordinatları (Merkezlenmiş -0.5f ile 0.5f arasında)
+	private static final float[] VERTICES = {-0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f};
 	// Dörtgeni oluşturacak iki üçgenin indeksleri
 	private static final int[] INDICES = {0,3,1,1,3,2};
 
