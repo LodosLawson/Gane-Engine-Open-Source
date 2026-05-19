@@ -133,8 +133,8 @@ public class MainApp {
 		// Animasyon bileşenini ekle
 		KeyframeAnimationComponent animasyon = new KeyframeAnimationComponent();
 		// 1. kareden 60. kareye kadar olan OBJ dosyalarını otomatik yükle
-		animasyon.loadFrames("res/animt/Başlıksızz", 1, 60, ".obj");
-		animasyon.setFPS(24f); // Saniyede 24 kare hızla oynat
+		animasyon.loadFrames("res/animt/Başlıksızz", 1, 100, ".obj");
+		animasyon.setFPS(60f); // Saniyede 24 kare hızla oynat
 		animasyon.setLoop(true); // Sürekli tekrar etsin
 		cikintiliObje.addComponent(animasyon);
 		activeScene.addEntity(cikintiliObje);

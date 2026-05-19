@@ -1,22 +1,40 @@
 package scene;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import loaders.ModelLoader;
 import utils.MyFile;
 
 /**
- * Blender'dan "OBJ Sequence" (OBJ Dizisi) olarak ihraç edilen vertex bazlı animasyonları
- * oynatmak için geliştirilmiş modern anahtar kare (keyframe) animasyon bileşeni.
- * Klasik retro 3D oyunlar (Quake vb.) gibi kare kare modelleri değiştirerek animasyon oynatır.
+ * Blender'dan "OBJ Sequence" olarak ihraç edilen vertex bazlı animasyonları
+ * durum tabanlı (State-Machine) yöneten gelişmiş anahtar kare animasyon bileşeni.
+ * Karakterlerin veya objelerin "idle", "attack", "interact" gibi kliplerini
+ * kolayca tanımlayıp tetiklemek için kullanılır.
  */
 public class KeyframeAnimationComponent extends Component {
 
-	private final List<Model> frames = new ArrayList<>();
-	private float timeBetweenFrames = 0.1f; // Her karenin ekranda kalma süresi (saniye)
+	/** Tek bir animasyon klibini (örneğin yürüme veya saldırma) temsil eden sınıf */
+	public static class AnimationClip {
+		public String name;
+		public List<Model> frames = new ArrayList<>();
+		public float timeBetweenFrames = 0.1f;
+		public boolean loop = true;
+
+		public AnimationClip(String name, float fps, boolean loop) {
+			this.name = name;
+			this.timeBetweenFrames = 1.0f / fps;
+			this.loop = loop;
+		}
+	}
+
+	private final Map<String, AnimationClip> clips = new HashMap<>();
+	private AnimationClip currentClip = null;
+	private AnimationClip defaultClip = null;
+
 	private float elapsedTime = 0f;
 	private int currentFrameIndex = 0;
-	private boolean loop = true;
 	private boolean playing = true;
 
 	private static final ModelLoader modelLoader = new ModelLoader();
@@ -24,41 +42,66 @@ public class KeyframeAnimationComponent extends Component {
 	public KeyframeAnimationComponent() {}
 
 	/**
-	 * Animasyon karelerini yükler.
-	 * Örneğin: "res/anim/yurume_", 0, 10, ".obj" -> yurume_0.obj'den yurume_10.obj'ye kadar yükler.
+	 * Yeni bir durum/klip animasyonu yükler ve kaydeder.
+	 * Örneğin: registerClip("attack", "res/animt/Başlıksızz", 1, 60, ".obj", 30f, false);
 	 */
-	public void loadFrames(String prefix, int startFrame, int endFrame, String suffix) {
+	public void registerClip(String name, String prefix, int startFrame, int endFrame, String suffix, float fps, boolean loop) {
+		AnimationClip clip = new AnimationClip(name, fps, loop);
+		
 		for (int i = startFrame; i <= endFrame; i++) {
-			// Blender genellikle 4 basamaklı sıfır dolgulu isimler verir (Örn: Başlıksızz0001.obj)
 			String paddedNumber = String.format("%04d", i);
 			String path = prefix + paddedNumber + suffix;
 			
-			// Proje dosya yapısına göre yolu bul
 			utils.MyFile myFile = new MyFile(path);
-			
 			try {
 				Model model = modelLoader.loadModel(myFile);
-				frames.add(model);
+				clip.frames.add(model);
 			} catch (Exception e) {
-				// Sıfır dolgusuz olarak tekrar dene
+				// Sıfır dolgusuz olarak dene
 				String fallbackPath = prefix + i + suffix;
 				try {
 					Model model = modelLoader.loadModel(new MyFile(fallbackPath));
-					frames.add(model);
+					clip.frames.add(model);
 				} catch (Exception ex) {
-					System.err.println("Animasyon karesi yuklenemedi: " + path + " veya " + fallbackPath);
+					System.err.println("[" + name + "] Animasyon karesi yuklenemedi: " + path);
 				}
+			}
+		}
+
+		clips.put(name, clip);
+		
+		// İlk yüklenen klibi varsayılan olarak seç
+		if (defaultClip == null) {
+			defaultClip = clip;
+			currentClip = clip;
+		}
+	}
+
+	/** Varsayılan (default/idle) animasyon klibini ayarlar */
+	public void setDefaultClip(String name) {
+		if (clips.containsKey(name)) {
+			this.defaultClip = clips.get(name);
+			if (currentClip == null) {
+				currentClip = defaultClip;
 			}
 		}
 	}
 
-	/** Saniyedeki kare sayısını (FPS) ayarlar */
-	public void setFPS(float fps) {
-		this.timeBetweenFrames = 1.0f / fps;
-	}
-
-	public void setLoop(boolean loop) {
-		this.loop = loop;
+	/** İsmi verilen animasyonu oynatır */
+	public void playClip(String name) {
+		if (!clips.containsKey(name)) {
+			System.err.println("Animasyon klibi bulunamadi: " + name);
+			return;
+		}
+		
+		AnimationClip newClip = clips.get(name);
+		if (currentClip != newClip) {
+			currentClip = newClip;
+			currentFrameIndex = 0;
+			elapsedTime = 0f;
+		}
+		playing = true;
+		updateEntityModel();
 	}
 
 	public void play() {
@@ -82,19 +125,25 @@ public class KeyframeAnimationComponent extends Component {
 
 	@Override
 	public void update(float delta) {
-		if (!playing || frames.isEmpty() || gameObject == null) return;
+		if (!playing || currentClip == null || currentClip.frames.isEmpty() || gameObject == null) return;
 
 		elapsedTime += delta;
-		if (elapsedTime >= timeBetweenFrames) {
+		if (elapsedTime >= currentClip.timeBetweenFrames) {
 			elapsedTime = 0f;
 			currentFrameIndex++;
 			
-			if (currentFrameIndex >= frames.size()) {
-				if (loop) {
+			if (currentFrameIndex >= currentClip.frames.size()) {
+				if (currentClip.loop) {
 					currentFrameIndex = 0;
 				} else {
-					currentFrameIndex = frames.size() - 1;
-					playing = false;
+					// Eğer döngü kapalıysa (örneğin attack bittiyse) varsayılan animasyona (idle/default) geri dön!
+					if (defaultClip != null && currentClip != defaultClip) {
+						currentClip = defaultClip;
+						currentFrameIndex = 0;
+					} else {
+						currentFrameIndex = currentClip.frames.size() - 1;
+						playing = false;
+					}
 				}
 			}
 			updateEntityModel();
@@ -102,8 +151,32 @@ public class KeyframeAnimationComponent extends Component {
 	}
 
 	private void updateEntityModel() {
-		if (gameObject != null && !frames.isEmpty()) {
-			gameObject.setModel(frames.get(currentFrameIndex));
+		if (gameObject != null && currentClip != null && !currentClip.frames.isEmpty()) {
+			gameObject.setModel(currentClip.frames.get(currentFrameIndex));
+		}
+	}
+
+	// --- Eski Geriye Dönük Uyumluluk Metotları (Geliştiriciyi kırmamak için) ---
+	@Deprecated
+	public void loadFrames(String prefix, int startFrame, int endFrame, String suffix) {
+		registerClip("default", prefix, startFrame, endFrame, suffix, 24f, true);
+		setDefaultClip("default");
+		playClip("default");
+	}
+
+	@Deprecated
+	public void setFPS(float fps) {
+		AnimationClip clip = clips.get("default");
+		if (clip != null) {
+			clip.timeBetweenFrames = 1.0f / fps;
+		}
+	}
+
+	@Deprecated
+	public void setLoop(boolean loop) {
+		AnimationClip clip = clips.get("default");
+		if (clip != null) {
+			clip.loop = loop;
 		}
 	}
 }
