@@ -96,7 +96,6 @@ public class MainApp {
 		waterr.setFresnelPower(0.6f);
 		waterr.setShineDamper(30.0f);
 		waterr.setReflectivity(0.9f);
-
 		activeScene.setLightDirection(new org.lwjgl.util.vector.Vector3f(-1f, 0f, 0f));
 		activeScene.setLightBrightness(1f);
 		activeScene.setAmbientLight(0.2f);
@@ -152,6 +151,18 @@ public class MainApp {
 		// MainApp sadece objeyi çağırır ve sahneye ekler!
 		gane.objects.AhsapZemin yeniZemin = new gane.objects.AhsapZemin();
 		activeScene.addEntity(yeniZemin);
+
+		// Su alanının tam ortasında (0, 0) ve su seviyesinin yarı altında (-2.2f) duran ahşap zemin objesi kopyası
+		gane.objects.AhsapZemin suIciZemin = new gane.objects.AhsapZemin();
+		suIciZemin.getPosition().set(0f, -2.2f, 0f); // Yükseliği -2.2f yaparak suyun içinde kalmasını sağlıyoruz (su yüksekliği -2.0f)
+		
+		// Su üstünde yüzen hissi vermek için animatörü özelleştiriyoruz
+		scene.AnimatorComponent suAnimator = suIciZemin.getComponent(scene.AnimatorComponent.class);
+		if (suAnimator != null) {
+			suAnimator.setBounceEffect(0.5f, 0.15f); // Yavaşça ve hafifçe su üstünde batıp çıkma hareketi yapar
+			suAnimator.setContinuousRotation(0f, 15f, 0f); // Yavaşça kendi ekseninde döner
+		}
+		activeScene.addEntity(suIciZemin);
 
 		// 1. Güneş Işığı (Directional Light) - Bütün sahneyi aynı yönden aydınlatır
 		// Zaten Scene içinde tanımlı ama yönünü değiştirebilirsin. (x, y, z)
