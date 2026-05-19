@@ -40,11 +40,17 @@ public class EntityRenderer {
 	 * @param lightDir Güneş ışığının veya ana ışığın yönü.
 	 * @param clipPlane Kırpma düzlemi, su yansıması vb. için ekranın belli bir kısmını kırpmak için kullanılır.
 	 */
-	public void render(List<Entity> entities, ICamera camera, Vector3f lightDir, Vector4f clipPlane) {
-		prepare(camera, lightDir, clipPlane);
+	public void render(List<Entity> entities, ICamera camera, scene.Scene scene, Vector4f clipPlane) {
+		prepare(camera, scene, clipPlane);
 		for (Entity entity : entities) {
 			prepareSkin(entity.getSkin());
 			Vao model = entity.getModel().getVao();
+			
+			org.lwjgl.util.vector.Matrix4f transform = new org.lwjgl.util.vector.Matrix4f();
+			transform.setIdentity();
+			org.lwjgl.util.vector.Matrix4f.translate(entity.getPosition(), transform, transform);
+			shader.transformationMatrix.loadMatrix(transform);
+			
 			model.bind(0, 1, 2);
 			GL11.glDrawElements(GL11.GL_TRIANGLES, model.getIndexCount(), GL11.GL_UNSIGNED_INT, 0);
 			model.unbind(0, 1, 2);
@@ -66,11 +72,27 @@ public class EntityRenderer {
 	 * @param lightDir Işık yönü.
 	 * @param clipPlane Kırpma düzlemi.
 	 */
-	private void prepare(ICamera camera, Vector3f lightDir, Vector4f clipPlane) {
+	private void prepare(ICamera camera, scene.Scene scene, Vector4f clipPlane) {
 		shader.start();
 		shader.projectionViewMatrix.loadMatrix(camera.getProjectionViewMatrix());
-		shader.lightDirection.loadVec3(lightDir);
+		shader.lightDirection.loadVec3(scene.getLightDirection());
+		shader.lightColor.loadVec3(scene.getLightColor());
+		shader.lightBrightness.loadFloat(scene.getLightBrightness());
+		shader.ambientLight.loadFloat(scene.getAmbientLight());
 		shader.plane.loadVec4(clipPlane);
+		shader.cameraPosition.loadVec3(camera.getPosition());
+		
+		// Eğer sahnede nokta ışık varsa shader'a yükle, yoksa siyah renk (0,0,0) gönder
+		scene.Light pointLight = scene.getPointLight();
+		if(pointLight != null) {
+			shader.pointLightPos.loadVec3(pointLight.getPosition());
+			shader.pointLightColor.loadVec3(pointLight.getColor());
+			shader.pointLightAttenuation.loadVec3(pointLight.getAttenuation());
+		} else {
+			shader.pointLightColor.loadVec3(new Vector3f(0, 0, 0));
+			shader.pointLightAttenuation.loadVec3(new Vector3f(1, 0, 0)); // 0'a bölünme (NaN) hatasını önlemek için sabit 1 gönder!
+		}
+		
 		OpenGlUtils.antialias(true);
 		OpenGlUtils.disableBlending();
 		OpenGlUtils.enableDepthTesting(true);

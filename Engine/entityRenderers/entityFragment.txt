@@ -17,6 +17,20 @@ uniform sampler2D extraMap;
 // Ekstra haritanın kullanılıp kullanılmayacağını belirten değişken.
 uniform float hasExtraMap;
 
+// Ana Güneş Işığı Rengi ve Yönü
+uniform vec3 lightColor;
+uniform vec3 lightDirection;
+
+// Kameranın dünya pozisyonu
+uniform vec3 cameraPosition;
+
+// Nokta/Spot Işık (Point Light) için değişkenler
+in vec3 pass_worldPos;
+in vec3 pass_normal;
+uniform vec3 pointLightPos;
+uniform vec3 pointLightColor;
+uniform vec3 pointLightAttenuation; // x=sabit, y=doğrusal, z=kare formülü çarpanları
+
 // Özel bir mesafe etkisi için merkez noktası.
 const vec2 center = vec2(-2.53, 3.42);
 
@@ -41,14 +55,51 @@ void main(void){
 	// Temel parlaklık değeri.
 	float brightness = pass_brightness;
 	
-	// Eğer ekstra parlama haritası varsa, bu pikselin parlayıp parlamadığını kontrol et ve parlaklığı ayarla.
+	// Varsayılan speküler (parlama) ayarları
+	float shineDamper = 32.0;
+	float reflectivity = 0.4;
+	
+	// Eğer ekstra pürüzlülük/parlaklık haritası varsa, değerleri her piksel için dinamik oku
 	if(hasExtraMap > 0.5){
-		float isGlowing = step(0.5, texture(extraMap, pass_textureCoords).g);
-		brightness = mix(brightness, 1.0, isGlowing);
+		float roughness = texture(extraMap, pass_textureCoords).r;
+		// Düşük pürüzlülük (karanlık pikseller) = Pürüzsüz yüzey, yüksek parlaklık yayılımı ve yansıma gücü
+		// Yüksek pürüzlülük (aydınlık pikseller) = Mat yüzey, yayvan parlaklık ve sıfıra yakın yansıma
+		shineDamper = mix(128.0, 4.0, roughness);
+		reflectivity = mix(0.8, 0.05, roughness);
 	}
 	
-	// Temel renge parlaklığı uygula.
-	out_colour = diffuseColour * brightness;
+	// Temel renge parlaklığı ve ışık rengini uygula. (Güneş Işığı)
+	vec4 sunLightColour = diffuseColour * brightness * vec4(lightColor, 1.0);
+	
+	// Nokta Işık / Spot Işık (Point Light) Hesaplaması
+	vec3 unitNormal = normalize(pass_normal);
+	vec3 toLightVector = pointLightPos - pass_worldPos;
+	float distanceToLight = length(toLightVector);
+	vec3 unitLightVector = normalize(toLightVector);
+	
+	float nDotl = max(dot(unitNormal, unitLightVector), 0.0);
+	float attFactor = pointLightAttenuation.x + (pointLightAttenuation.y * distanceToLight) + (pointLightAttenuation.z * distanceToLight * distanceToLight);
+	vec3 pointLightIllumination = (pointLightColor * nDotl) / attFactor;
+	
+	// Speküler (Dinamik Parlaklık) Yansıma Hesaplaması (Blinn-Phong)
+	vec3 viewVector = normalize(cameraPosition - pass_worldPos);
+	
+	// 1. Güneş Işığı için Speküler Yansıma
+	vec3 unitLightDirection = normalize(-lightDirection); 
+	vec3 sunHalfwayVector = normalize(unitLightDirection + viewVector);
+	float sunSpecularFactor = max(dot(unitNormal, sunHalfwayVector), 0.0);
+	float sunSpecular = pow(sunSpecularFactor, shineDamper); 
+	vec3 sunSpecularLight = sunSpecular * reflectivity * lightColor; 
+ 
+	// 2. Nokta Işığı için Speküler Yansıma
+	vec3 pointHalfwayVector = normalize(unitLightVector + viewVector);
+	float pointSpecularFactor = max(dot(unitNormal, pointHalfwayVector), 0.0);
+	float pointSpecular = pow(pointSpecularFactor, shineDamper);
+	vec3 pointSpecularLight = (pointSpecular * reflectivity * pointLightColor) / attFactor;
+	
+	// Sonuç = Güneş Işığı + Nokta Işığı + Speküler Parlamalar
+	vec3 totalSpecular = sunSpecularLight + pointSpecularLight;
+	out_colour = sunLightColour + vec4(pointLightIllumination * diffuseColour.rgb, 0.0) + vec4(totalSpecular, 0.0);
 	
 	// Merkez noktadan uzaklaştıkça nesnelerin rengini beyaza (1.0) karıştırma efekti.
 	float disFactor = smoothlyStep(15.0, 16.0, distance(center, pass_pos));

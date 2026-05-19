@@ -54,7 +54,7 @@ public class MasterRenderer {
 	public void renderLowQualityScene(Scene scene, ICamera cubeMapCamera){
 		prepare();
 		// Sadece temel objeler ve gökyüzü çizilir. Su veya parlak nesneler çizilmez.
-		entityRenderer.render(scene.getImportantEntities(), cubeMapCamera, scene.getLightDirection(), NO_CLIP);
+		entityRenderer.render(scene.getImportantEntities(), cubeMapCamera, scene, NO_CLIP);
 		if (scene.getSky() != null) {
 			skyRenderer.render(scene.getSky(), cubeMapCamera);
 		}
@@ -113,7 +113,7 @@ public class MasterRenderer {
 		scene.getCamera().reflect(scene.getWaterHeight());
 		
 		// Kameraya göre ters dönmüş dünyayı, suyun altını kırparak çiz (clipPlane: 0,1,0)
-		entityRenderer.render(scene.getReflectedEntities(), scene.getCamera(), scene.getLightDirection(), new Vector4f(0,1,0,0.1f));
+		entityRenderer.render(scene.getReflectedEntities(), scene.getCamera(), scene, new Vector4f(0,1,0,0.1f));
 		if (scene.getSky() != null) {
 			skyRenderer.render(scene.getSky(), scene.getCamera());
 		}
@@ -132,7 +132,7 @@ public class MasterRenderer {
 		waterFbos.bindRefractionFrameBuffer();
 		prepare();
 		// Suyun sadece altındaki nesneleri çiz (clipPlane: 0,-1,0)
-		entityRenderer.render(scene.getUnderwaterEntities(), scene.getCamera(), scene.getLightDirection(), new Vector4f(0,-1,0, 0));
+		entityRenderer.render(scene.getUnderwaterEntities(), scene.getCamera(), scene, new Vector4f(0,-1,0, 0));
 		waterFbos.unbindCurrentFrameBuffer();
 	}
 	
@@ -143,7 +143,7 @@ public class MasterRenderer {
 	private void renderMainPass(Scene scene){
 		prepare();
 		// Normal objeleri çiz
-		entityRenderer.render(scene.getAllEntities(), scene.getCamera(), scene.getLightDirection(), NO_CLIP);
+		entityRenderer.render(scene.getAllEntities(), scene.getCamera(), scene, NO_CLIP);
 		// Çevresel yansımalara sahip parlak metal/cam tarzı objeleri çiz
 		shinyRenderer.render(scene.getShinyEntities(), scene.getEnvironmentMap(), scene.getCamera(), scene.getLightDirection());
 		// Gökyüzünü arka plana oturt

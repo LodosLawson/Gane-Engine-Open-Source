@@ -39,6 +39,7 @@ public class WaterRenderer {
 
 	/**
 	 * Su renderlayıcısını başlatır.
+	 * 
 	 * @param fbos Yansıma ve Kırılma dokularını içeren FrameBuffer nesnesi
 	 */
 	public WaterRenderer(WaterFrameBuffers fbos) {
@@ -53,8 +54,8 @@ public class WaterRenderer {
 	/**
 	 * Listedeki tüm su nesnelerini (WaterTile) ekrana çizer.
 	 * 
-	 * @param water Çizilecek su nesnelerinin listesi
-	 * @param camera Kamera nesnesi
+	 * @param water    Çizilecek su nesnelerinin listesi
+	 * @param camera   Kamera nesnesi
 	 * @param lightDir Güneşin/Işığın yönü
 	 */
 	public void render(List<WaterTile> water, ICamera camera, Vector3f lightDir) {
@@ -107,14 +108,15 @@ public class WaterRenderer {
 	private void bindTextures() {
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, fbos.getReflectionTexture());
-		
+
 		GL13.glActiveTexture(GL13.GL_TEXTURE1);
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, fbos.getRefractionTexture());
-		
+
 		dudvTexture.bindToUnit(2);
 		normalMap.bindToUnit(3);
-		
-		// Kırılma (Refraction) derinlik dokusunu bağlar (kıyıların yumuşaklığı için gereklidir)
+
+		// Kırılma (Refraction) derinlik dokusunu bağlar (kıyıların yumuşaklığı için
+		// gereklidir)
 		GL13.glActiveTexture(GL13.GL_TEXTURE4);
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, fbos.getRefractionDepthTexture());
 	}
@@ -136,7 +138,8 @@ public class WaterRenderer {
 	}
 
 	/**
-	 * Suyun dünyadaki pozisyonunu, yüksekliğini ve boyutunu belirten Model matrisini oluşturur.
+	 * Suyun dünyadaki pozisyonunu, yüksekliğini ve boyutunu belirten Model
+	 * matrisini oluşturur.
 	 */
 	private Matrix4f createModelMatrix(float x, float y, float z, float scale) {
 		Matrix4f modelMatrix = new Matrix4f();

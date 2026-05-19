@@ -14,10 +14,18 @@ out float pass_brightness;
 // Fragment shader'a aktarılacak dünya pozisyonu.
 out vec2 pass_pos;
 
+// Nokta ışık için gereken veriler
+out vec3 pass_worldPos;
+out vec3 pass_normal;
+
 // Kamera ve nesne konumunu içeren dönüşüm matrisi.
 uniform mat4 projectionViewMatrix;
+// Nesnenin sadece kendisine ait konum (translation vb.) matrisi.
+uniform mat4 transformationMatrix;
 // Işığın yönü (güneşin geliş açısı vb.).
 uniform vec3 lightDirection;
+uniform float lightBrightness;
+uniform float ambientLight;
 // Kırpma düzlemi (su yansımaları için suyun üstünü veya altını kırpmaya yarar).
 uniform vec4 plane;
 
@@ -25,7 +33,7 @@ uniform vec4 plane;
 void main(void){
 
 	// Nesnenin dünya üzerindeki pozisyonu.
-	vec4 worldPosition = vec4(in_position, 1.0);
+	vec4 worldPosition = transformationMatrix * vec4(in_position, 1.0);
 	pass_pos = worldPosition.xz;
 	
 	// Köşenin ekrandaki son pozisyonunu hesapla.
@@ -37,7 +45,15 @@ void main(void){
 	// Kaplama koordinatlarını direkt fragment shader'a geçir.
 	pass_textureCoords = in_textureCoords;
 	
+	// Modelin normalini dünya koordinatına çevir (Rotasyon varsa düzelt)
+	vec3 worldNormal = (transformationMatrix * vec4(in_normal, 0.0)).xyz;
+
 	// Işık yönü ve yüzey normalini kullanarak yüzeyin ne kadar ışık aldığını (parlaklığını) hesapla.
-	pass_brightness = max(dot(-lightDirection, normalize(in_normal)), 0.0) * 0.8 + 0.5;
+	pass_brightness = max(dot(-lightDirection, normalize(worldNormal)), 0.0) * lightBrightness + ambientLight;
+	
+	// Nokta ışığı (Spot/Point Light) için değerleri aktar
+	pass_worldPos = worldPosition.xyz;
+	// Eğer transformationMatrix'te döndürme (rotation) varsa normali de döndürmeliyiz
+	pass_normal = (transformationMatrix * vec4(in_normal, 0.0)).xyz;
 
 }

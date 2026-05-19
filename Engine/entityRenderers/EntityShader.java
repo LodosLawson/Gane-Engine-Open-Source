@@ -6,6 +6,7 @@ import shaders.UniformMatrix;
 import shaders.UniformSampler;
 import shaders.UniformVec3;
 import shaders.UniformVec4;
+import shaders.UniformFloat;
 import utils.MyFile;
 
 /**
@@ -36,14 +37,27 @@ public class EntityShader extends ShaderProgram {
 	protected UniformBoolean hasExtraMap = new UniformBoolean("hasExtraMap");
 	
 	/**
+	 * Nesnenin dünyadaki konumunu (translation) hesaplamak için matris.
+	 */
+	protected UniformMatrix transformationMatrix = new UniformMatrix("transformationMatrix");
+	
+	/**
 	 * Işığın (örneğin güneşin) geliş yönünü tutan 3 boyutlu vektör değişkeni.
 	 */
 	protected UniformVec3 lightDirection = new UniformVec3("lightDirection");
+	protected UniformVec3 lightColor = new UniformVec3("lightColor");
+	protected UniformFloat lightBrightness = new UniformFloat("lightBrightness");
+	protected UniformFloat ambientLight = new UniformFloat("ambientLight");
 	
 	/**
 	 * Kırpma düzlemi vektörü. Örneğin su altı yansımalarında ekranın bir kısmını kesmek için kullanılır.
 	 */
 	protected UniformVec4 plane = new UniformVec4("plane");
+
+	// Nokta Işık (Point Light) Uniformları
+	protected UniformVec3 pointLightPos = new UniformVec3("pointLightPos");
+	protected UniformVec3 pointLightColor = new UniformVec3("pointLightColor");
+	protected UniformVec3 pointLightAttenuation = new UniformVec3("pointLightAttenuation");
 
 	/**
 	 * Modelin ana kaplamasını (resmini) tutan sampler.
@@ -55,13 +69,15 @@ public class EntityShader extends ShaderProgram {
 	 */
 	private UniformSampler extraMap = new UniformSampler("extraMap");
 
+	protected UniformVec3 cameraPosition = new UniformVec3("cameraPosition");
+
 	/**
 	 * Shader programını başlatan ve değişkenleri bağlayan yapıcı (constructor) metot.
 	 */
 	public EntityShader() {
 		super(VERTEX_SHADER, FRAGMENT_SHADER, "in_position", "in_textureCoords", "in_normal");
-		super.storeAllUniformLocations(projectionViewMatrix, diffuseMap, extraMap, hasExtraMap,
-				lightDirection, plane);
+		super.storeAllUniformLocations(projectionViewMatrix, transformationMatrix, diffuseMap, extraMap, hasExtraMap,
+				lightDirection, lightColor, lightBrightness, ambientLight, plane, pointLightPos, pointLightColor, pointLightAttenuation, cameraPosition);
 		connectTextureUnits();
 	}
 

@@ -38,6 +38,17 @@ public class Scene {
 	private ICamera camera;
 	// Güneş / Ana ışık kaynağının sahneye geliş yönü (Varsayılan olarak direkt yukarıdan aşağıya (0, -1, 0))
 	private Vector3f lightDirection = new Vector3f(0, -1, 0);
+	
+	// Güneş Işığının Rengi (Varsayılan: Beyaz)
+	private Vector3f lightColor = new Vector3f(1.0f, 1.0f, 1.0f);
+	// Güneş Işığının Gücü / Parlaklığı
+	private float lightBrightness = 0.8f;
+	// Ortam Işığı (Gölgede kalan, güneş görmeyen yerlerin minimum parlaklığı)
+	private float ambientLight = 0.5f;
+	
+	// Nokta Işığı (Belirli bir noktadan yayılan ışık)
+	private Light pointLight;
+	
 	// Arka planı süsleyecek gökyüzü küpü
 	private Skybox sky;
 	
@@ -152,6 +163,40 @@ public class Scene {
 	/** @return Ana ışık (güneş) yön vektörünü döndürür */
 	public Vector3f getLightDirection() {
 		return lightDirection;
+	}
+
+
+	
+	public Vector3f getLightColor() {
+		return lightColor;
+	}
+
+	public void setLightColor(Vector3f lightColor) {
+		this.lightColor = lightColor;
+	}
+
+	public float getLightBrightness() {
+		return lightBrightness;
+	}
+
+	public void setLightBrightness(float lightBrightness) {
+		this.lightBrightness = lightBrightness;
+	}
+
+	public float getAmbientLight() {
+		return ambientLight;
+	}
+
+	public void setAmbientLight(float ambientLight) {
+		this.ambientLight = ambientLight;
+	}
+
+	public Light getPointLight() {
+		return pointLight;
+	}
+
+	public void setPointLight(Light pointLight) {
+		this.pointLight = pointLight;
 	}
 
 	/** @return Sahnenin bakış açısını sağlayan kamerayı döndürür */

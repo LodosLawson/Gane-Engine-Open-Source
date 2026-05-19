@@ -89,14 +89,45 @@ public class TextureUtils {
 			if (in == null) {
 				throw new IllegalStateException("Resource not found: " + file.getPath());
 			}
-			PNGDecoder decoder = new PNGDecoder(in);
-			width = decoder.getWidth();
-			height = decoder.getHeight();
-			// RGBA için piksel başına 4 byte ayır
-			buffer = ByteBuffer.allocateDirect(4 * width * height);
-			decoder.decode(buffer, width * 4, Format.BGRA);
-			buffer.flip(); // Tamponu okumaya hazır hale getir
-			in.close();
+			try {
+				PNGDecoder decoder = new PNGDecoder(in);
+				width = decoder.getWidth();
+				height = decoder.getHeight();
+				buffer = ByteBuffer.allocateDirect(4 * width * height);
+				decoder.decode(buffer, width * 4, Format.BGRA);
+				buffer.flip();
+				in.close();
+			} catch (Exception pngEx) {
+				// PNGDecoder başarısız olursa (örn: 16-bit, grayscale veya farklı bir format ise),
+				// Java'nın yerleşik ImageIO kütüphanesine geri dön (Fallback).
+				in.close(); // Eski stream'i kapat
+				
+				// Yeni bir stream aç
+				InputStream in2 = file.getInputStream();
+				java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(in2);
+				in2.close();
+				
+				if (image == null) {
+					throw pngEx; // Eğer ImageIO da okuyamazsa orijinal hatayı fırlat
+				}
+				
+				width = image.getWidth();
+				height = image.getHeight();
+				int[] pixels = new int[width * height];
+				image.getRGB(0, 0, width, height, pixels, 0, width);
+				
+				buffer = org.lwjgl.BufferUtils.createByteBuffer(width * height * 4);
+				for (int y = 0; y < height; y++) {
+					for (int x = 0; x < width; x++) {
+						int pixel = pixels[y * width + x];
+						buffer.put((byte) (pixel & 0xFF));         // Blue
+						buffer.put((byte) ((pixel >> 8) & 0xFF));  // Green
+						buffer.put((byte) ((pixel >> 16) & 0xFF)); // Red
+						buffer.put((byte) ((pixel >> 24) & 0xFF)); // Alpha
+					}
+				}
+				buffer.flip();
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.err.println("Tried to load texture " + file.getName() + " , didn't work");

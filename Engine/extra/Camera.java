@@ -15,6 +15,12 @@ import utils.SmoothFloat;
  * Kameranın hareketi, farenin döndürülmesi, yakınlaştırma/uzaklaştırma (zoom) işlemleri burada hesaplanır.
  */
 public class Camera implements ICamera{
+
+	public enum CameraMode {
+		FREE, THIRD_PERSON, EDITOR
+	}
+
+	private CameraMode currentMode = CameraMode.EDITOR;
 	
 	/**
 	 * Görüş açısı (Field of View). Kameranın ne kadar geniş bir alanı gördüğünü belirler.
@@ -84,11 +90,72 @@ public class Camera implements ICamera{
 		this.projectionMatrix = createProjectionMatrix();
 	}
 
+	public void setMode(CameraMode mode) {
+		this.currentMode = mode;
+	}
+
+	public CameraMode getMode() {
+		return currentMode;
+	}
+
 	/**
 	 * Kameranın her karede (frame) hareketini günceller.
-	 * Klavyeden (WASD) ve fareden gelen girdileri hesaplayarak kameranın yeni pozisyonunu belirler.
+	 * Mevcut kamera moduna göre ilgili hareket fonksiyonunu çağırır.
 	 */
 	public void move(){
+		switch (currentMode) {
+			case FREE:
+				moveFree();
+				break;
+			case THIRD_PERSON:
+				moveThirdPerson();
+				break;
+			case EDITOR:
+				moveEditor();
+				break;
+		}
+		updateViewMatrix();
+	}
+
+	private void moveFree() {
+		if (Mouse.isButtonDown(1)) {
+			pitch -= Mouse.getDY() * 0.1f;
+			yaw += Mouse.getDX() * 0.1f;
+		}
+		if (pitch < -90) pitch = -90;
+		if (pitch > 90) pitch = 90;
+		yaw %= 360;
+
+		float speed = 0.5f;
+		if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) speed = 1.5f;
+
+		if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
+			position.x += speed * Math.sin(Math.toRadians(yaw));
+			position.z -= speed * Math.cos(Math.toRadians(yaw));
+			position.y -= speed * Math.sin(Math.toRadians(pitch));
+		}
+		if (Keyboard.isKeyDown(Keyboard.KEY_S)) {
+			position.x -= speed * Math.sin(Math.toRadians(yaw));
+			position.z += speed * Math.cos(Math.toRadians(yaw));
+			position.y += speed * Math.sin(Math.toRadians(pitch));
+		}
+		if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
+			position.x -= speed * Math.cos(Math.toRadians(yaw));
+			position.z -= speed * Math.sin(Math.toRadians(yaw));
+		}
+		if (Keyboard.isKeyDown(Keyboard.KEY_D)) {
+			position.x += speed * Math.cos(Math.toRadians(yaw));
+			position.z += speed * Math.sin(Math.toRadians(yaw));
+		}
+		if (Keyboard.isKeyDown(Keyboard.KEY_Q)) {
+			position.y -= speed;
+		}
+		if (Keyboard.isKeyDown(Keyboard.KEY_E)) {
+			position.y += speed;
+		}
+	}
+
+	private void moveThirdPerson() {
 		movePosition();
 		calculatePitch();
 		calculateAngleAroundPlayer();
@@ -98,7 +165,50 @@ public class Camera implements ICamera{
 		calculateCameraPosition(horizontalDistance, verticalDistance);
 		this.yaw = 360 - angleAroundPlayer.get();
 		yaw %= 360;
-		updateViewMatrix();
+	}
+
+	private void moveEditor() {
+		// Editör modunda sadece SHIFT tuşuna basılıyken kamera hareket edebilir.
+		// SHIFT tuşuna basılı değilse kamera sabit kalır (Kullanıcı objeleri seçebilir).
+		if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
+			
+			// Fareye basılıyken bakış açısını (pitch, yaw) değiştir
+			if (Mouse.isButtonDown(0) || Mouse.isButtonDown(1) || Mouse.isButtonDown(2)) {
+				pitch -= Mouse.getDY() * 0.2f;
+				yaw += Mouse.getDX() * 0.2f;
+			}
+			if (pitch < -90) pitch = -90;
+			if (pitch > 90) pitch = 90;
+			yaw %= 360;
+
+			float speed = 0.5f;
+
+			// WASD + QE ile uzayda serbest uçuş
+			if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
+				position.x += speed * Math.sin(Math.toRadians(yaw));
+				position.z -= speed * Math.cos(Math.toRadians(yaw));
+				position.y -= speed * Math.sin(Math.toRadians(pitch));
+			}
+			if (Keyboard.isKeyDown(Keyboard.KEY_S)) {
+				position.x -= speed * Math.sin(Math.toRadians(yaw));
+				position.z += speed * Math.cos(Math.toRadians(yaw));
+				position.y += speed * Math.sin(Math.toRadians(pitch));
+			}
+			if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
+				position.x -= speed * Math.cos(Math.toRadians(yaw));
+				position.z -= speed * Math.sin(Math.toRadians(yaw));
+			}
+			if (Keyboard.isKeyDown(Keyboard.KEY_D)) {
+				position.x += speed * Math.cos(Math.toRadians(yaw));
+				position.z += speed * Math.sin(Math.toRadians(yaw));
+			}
+			if (Keyboard.isKeyDown(Keyboard.KEY_Q)) {
+				position.y -= speed;
+			}
+			if (Keyboard.isKeyDown(Keyboard.KEY_E)) {
+				position.y += speed;
+			}
+		}
 	}
 
 	@Override
