@@ -29,12 +29,25 @@ public class KeyframeAnimationComponent extends Component {
 	 */
 	public void loadFrames(String prefix, int startFrame, int endFrame, String suffix) {
 		for (int i = startFrame; i <= endFrame; i++) {
-			String path = prefix + i + suffix;
+			// Blender genellikle 4 basamaklı sıfır dolgulu isimler verir (Örn: Başlıksızz0001.obj)
+			String paddedNumber = String.format("%04d", i);
+			String path = prefix + paddedNumber + suffix;
+			
+			// Proje dosya yapısına göre yolu bul
+			utils.MyFile myFile = new MyFile(path);
+			
 			try {
-				Model model = modelLoader.loadModel(new MyFile(path));
+				Model model = modelLoader.loadModel(myFile);
 				frames.add(model);
 			} catch (Exception e) {
-				System.err.println("Animasyon karesi yuklenemedi: " + path);
+				// Sıfır dolgusuz olarak tekrar dene
+				String fallbackPath = prefix + i + suffix;
+				try {
+					Model model = modelLoader.loadModel(new MyFile(fallbackPath));
+					frames.add(model);
+				} catch (Exception ex) {
+					System.err.println("Animasyon karesi yuklenemedi: " + path + " veya " + fallbackPath);
+				}
 			}
 		}
 	}

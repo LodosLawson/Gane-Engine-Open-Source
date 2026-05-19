@@ -128,12 +128,12 @@ public class MainApp {
 		activeScene.setLightDirection(new org.lwjgl.util.vector.Vector3f(0.5f, -1f, 0.5f));
 
 		// Çıkıntılı objeni tanımla
-		GameObject cikintiliObje = new GameObject("res/anim/Başlıksızz0001.obj",
-				"res/WoodFloor004_4K-PNG_Roughness.png");
+		GameObject cikintiliObje = new GameObject("res/animt/Başlıksızz0001.obj",
+				"res/WoodFloor004_4K-PNG_Color.png");
 		// Animasyon bileşenini ekle
 		KeyframeAnimationComponent animasyon = new KeyframeAnimationComponent();
-		// 1. kareden 15. kareye kadar olan OBJ dosyalarını otomatik yükle
-		animasyon.loadFrames("res/anim/cikinti_", 1, 15, ".obj");
+		// 1. kareden 60. kareye kadar olan OBJ dosyalarını otomatik yükle
+		animasyon.loadFrames("res/animt/Başlıksızz", 1, 60, ".obj");
 		animasyon.setFPS(24f); // Saniyede 24 kare hızla oynat
 		animasyon.setLoop(true); // Sürekli tekrar etsin
 		cikintiliObje.addComponent(animasyon);
