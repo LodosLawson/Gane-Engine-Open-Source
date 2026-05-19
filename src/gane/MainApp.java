@@ -74,15 +74,15 @@ public class MainApp {
 		activeScene.getWater().add(waterr);
 
 		// Su yüzeyi ayarları
-		waterr.setWaveSpeed(0.001f);          // Dalga akış hızı
-		waterr.setWaveStrength(0.015f);       // Dalga bükülme (distortion) gücü
-		waterr.setWaveAmplitude(0.15f);       // Vertex dalga yüksekliği (3D dalga efekti)
-		waterr.setWaveFrequency(0.3f);        // Dalga frekansı (sıklık)
+		waterr.setWaveSpeed(0.001f); // Dalga akış hızı
+		waterr.setWaveStrength(0.015f); // Dalga bükülme (distortion) gücü
+		waterr.setWaveAmplitude(0.15f); // Vertex dalga yüksekliği (3D dalga efekti)
+		waterr.setWaveFrequency(0.3f); // Dalga frekansı (sıklık)
 
 		// Renk ve saydamlık
-		waterr.setWaterColor(0.0f, 0.25f, 0.4f);  // Koyu okyanus mavisi
-		waterr.setTransparency(0.55f);              // Yarı saydam
-		waterr.setColorMixFactor(0.15f);            // Su renginin görünürlüğü
+		waterr.setWaterColor(0.0f, 0.25f, 0.4f); // Koyu okyanus mavisi
+		waterr.setTransparency(0.55f); // Yarı saydam
+		waterr.setColorMixFactor(0.15f); // Su renginin görünürlüğü
 
 		// Derinlik efekti
 		waterr.setDepth(10.0f);
@@ -152,10 +152,10 @@ public class MainApp {
 		gane.objects.AhsapZemin yeniZemin = new gane.objects.AhsapZemin();
 		activeScene.addEntity(yeniZemin);
 
-		// Su alanının tam ortasında (0, 0) ve su seviyesinin yarı altında (-2.2f) duran ahşap zemin objesi kopyası
+		// Su alanının tam ortasında (0, 0) ve su seviyesinin yarı altında (-2.2f) duran
 		gane.objects.AhsapZemin suIciZemin = new gane.objects.AhsapZemin();
-		suIciZemin.getPosition().set(0f, -2.2f, 0f); // Yükseliği -2.2f yaparak suyun içinde kalmasını sağlıyoruz (su yüksekliği -2.0f)
-		
+		suIciZemin.getPosition().set(-8.2f, -3.42f, 0f); // Objenin model yüksekliğine göre Y=-3.42f değeri objeyi su seviyesinde (-2.0f) tam yarı yarıya batırır
+
 		// Su üstünde yüzen hissi vermek için animatörü özelleştiriyoruz
 		scene.AnimatorComponent suAnimator = suIciZemin.getComponent(scene.AnimatorComponent.class);
 		if (suAnimator != null) {
