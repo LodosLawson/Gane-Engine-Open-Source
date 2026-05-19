@@ -152,6 +152,60 @@ public class MasterRenderer {
 		}
 		// En son, hazırlanan reflection/refraction dokularıyla su yüzeyini çiz
 		waterRenderer.render(scene.getWater(), scene.getCamera(), scene.getLightDirection());
+		
+		// Sualtı Kamera Efekti: Kamera su seviyesinin altındaysa mavi sis bindirmesi
+		renderUnderwaterOverlay(scene);
+	}
+	
+	/**
+	 * Kamera su altındaysa yarı saydam mavi bir katman (fog overlay) ekler.
+	 * Sualtında olduğunda derinlik hissiyatı ve suyun içinde olma duygusu verir.
+	 */
+	private void renderUnderwaterOverlay(Scene scene) {
+		float cameraY = scene.getCamera().getPosition().y;
+		float waterHeight = scene.getWaterHeight();
+		
+		if (cameraY < waterHeight && !scene.getWater().isEmpty()) {
+			water.WaterTile tile = scene.getWater().get(0);
+			
+			// Derinlik faktörü: Kamera ne kadar derindeyse sis o kadar yoğun
+			float depthFactor = Math.min((waterHeight - cameraY) * tile.getUnderwaterFogDensity(), 0.85f);
+			
+			// OpenGL 2D overlay: Tam ekran yarı saydam mavi dikdörtgen
+			GL11.glDisable(GL11.GL_DEPTH_TEST);
+			GL11.glEnable(GL11.GL_BLEND);
+			GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+			
+			GL11.glMatrixMode(GL11.GL_PROJECTION);
+			GL11.glPushMatrix();
+			GL11.glLoadIdentity();
+			GL11.glOrtho(0, 1, 0, 1, -1, 1);
+			GL11.glMatrixMode(GL11.GL_MODELVIEW);
+			GL11.glPushMatrix();
+			GL11.glLoadIdentity();
+			
+			GL11.glColor4f(
+				tile.getUnderwaterFogR(), 
+				tile.getUnderwaterFogG(), 
+				tile.getUnderwaterFogB(), 
+				depthFactor
+			);
+			GL11.glBegin(GL11.GL_QUADS);
+			GL11.glVertex2f(0, 0);
+			GL11.glVertex2f(1, 0);
+			GL11.glVertex2f(1, 1);
+			GL11.glVertex2f(0, 1);
+			GL11.glEnd();
+			
+			GL11.glPopMatrix();
+			GL11.glMatrixMode(GL11.GL_PROJECTION);
+			GL11.glPopMatrix();
+			GL11.glMatrixMode(GL11.GL_MODELVIEW);
+			
+			GL11.glEnable(GL11.GL_DEPTH_TEST);
+			GL11.glColor4f(1, 1, 1, 1); // Renk state'ini sıfırla
+		}
 	}
 
 }
+

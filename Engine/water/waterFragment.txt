@@ -4,6 +4,7 @@ in vec4 clipSpace;
 in vec2 textureCoords;
 in vec3 toCameraVector;
 in vec2 pass_pos;
+in vec3 worldPos;
 
 out vec4 out_Color;
 
@@ -17,18 +18,19 @@ uniform sampler2D depthMap;
 uniform float moveFactor;
 uniform float waveStrength;
 
-const float shineDamper = 30.0;
-const float reflectivity = 0.9;
-const vec3 waterColour = vec3(0.0, 0.3, 0.5);
-
-const vec2 center = vec2(-2.53, 3.42);
+// Dinamik su parametreleri (WaterTile'dan gelir)
+uniform vec3 waterColour;
+uniform float transparency;
+uniform float colorMixFactor;
+uniform float shineDamper;
+uniform float reflectivity;
+uniform float fresnelPower;
 
 const int blurSize = 4;
 const float blurSampleCount = (blurSize * 2.0) + 1.0;
 const float textureHeight = 360.0;
 const float texelSize = 1.0 / textureHeight;
 
-//I want to use the glsl smoothstep function, but for some unknown reason it doesn't work on my laptop, but only when exported as a jar. Works fine in Eclipse!
 float smoothlyStep(float edge0, float edge1, float x){
     float t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
     return t * t * (3.0 - 2.0 * t);
@@ -50,6 +52,7 @@ void main(void) {
 	float waterDistance = 2.0 * near * far / (far + near - (2.0 * depth - 1.0) * (far - near));	
 	float waterDepth = floorDistance - waterDistance;	
 	
+	// Dalga bükülmesi (DuDV Map distortion)
 	vec2 distortedTexCoords = texture(dudvMap, vec2(textureCoords.x + moveFactor, textureCoords.y)).rg*0.1;
 	distortedTexCoords = textureCoords + vec2(distortedTexCoords.x, distortedTexCoords.y+moveFactor);
 	vec2 totalDistortion = (texture(dudvMap, distortedTexCoords).rg * 2.0 - 1.0) * waveStrength * clamp(waterDepth/1.0, 0.0, 1.0);
@@ -61,6 +64,7 @@ void main(void) {
 	reflectTexCoords.x = clamp(reflectTexCoords.x, 0.001, 0.999);
 	reflectTexCoords.y = clamp(reflectTexCoords.y, -0.999, -0.001);
 	
+	// Yansıma (Blur ile yumuşatılmış)
 	vec4 reflectColour = vec4(0.0);
 	for(int i=-blurSize;i<=blurSize;i++){
 		float offset = i * texelSize;
@@ -68,29 +72,35 @@ void main(void) {
 	}
 	reflectColour /= blurSampleCount;
 	
+	// Kırılma (Derinliğe göre su rengine karıştırılır)
 	vec4 refractColour = texture(refractionTexture, refractTexCoords);
 	refractColour = mix(refractColour, vec4(waterColour, 1.0), clamp(waterDepth/70.0, 0.0, 1.0));
 	
+	// Normal map ile yüzey detayları
 	vec4 normalMapColour = texture(normalMap, distortedTexCoords);
 	vec3 normal = vec3(normalMapColour.r * 2.0 - 1.0, normalMapColour.b*3.0, normalMapColour.g * 2.0 - 1.0);
 	normal = normalize(normal);
 	
+	// Fresnel efekti (Bakış açısına göre yansıma/kırılma dengesi)
 	vec3 viewVector = normalize(toCameraVector);
 	float refractiveFactor = dot(viewVector, normal);
-	refractiveFactor = pow(refractiveFactor, 0.6);
+	refractiveFactor = pow(refractiveFactor, fresnelPower);
 	refractiveFactor = clamp(refractiveFactor, 0.0, 1.0);
 	
+	// Specular ışık yansıması
 	vec3 reflectedLight = reflect(normalize(lightDirection), normal);
 	float specular = max(dot(reflectedLight, viewVector), 0.0);
 	specular = pow(specular, shineDamper);
 	vec3 specularHighlights = vec3(1.0)*specular * reflectivity * clamp(waterDepth/0.5, 0.0, 1.0);
 
+	// Son rengi oluştur (Yansıma + Kırılma + Specular)
 	out_Color = mix(reflectColour, refractColour + vec4(specularHighlights, 0.0), refractiveFactor);
-	out_Color = mix(out_Color, vec4(waterColour, 1.0), 0.2);
-	out_Color.a = clamp(waterDepth/0.5, 0.0, 1.0);
 	
-	// Mesafe bazlı beyazlama filtresini devre dışı bırakıyoruz (tüm su yüzeyinin mavi/normal kalması için)
-	// float disFactor = smoothlyStep(15.0, 16.0, distance(center, pass_pos));
-	// out_Color.rgb = mix(out_Color.rgb, vec3(1.0), disFactor);
+	// Su rengini karıştır (colorMixFactor ile kontrol edilir)
+	out_Color = mix(out_Color, vec4(waterColour, 1.0), colorMixFactor);
+	
+	// Saydamlık (transparency parametresiyle kontrol, derinlikle de etkilenir)
+	float edgeSoftness = clamp(waterDepth / 1.5, 0.0, 1.0);
+	out_Color.a = transparency * edgeSoftness;
 	
 }

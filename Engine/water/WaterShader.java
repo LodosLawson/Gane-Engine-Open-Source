@@ -8,8 +8,9 @@ import shaders.UniformVec3;
 import utils.MyFile;
 
 /**
- * Suyun renderlanmasında kullanılan özel gölgelendirici (Shader) sınıfı.
- * Suyun hareketi, yansıma, kırılma ve fresnel efektlerini hesaplar.
+ * Gelişmiş su gölgelendirici (Shader) sınıfı.
+ * 3D dalga, dinamik renk, saydamlık, fresnel ve specular parametreleri
+ * WaterTile'dan runtime'da yüklenir.
  */
 public class WaterShader extends ShaderProgram {
 
@@ -21,36 +22,46 @@ public class WaterShader extends ShaderProgram {
 	protected UniformMatrix viewMatrix = new UniformMatrix("viewMatrix");
 	protected UniformMatrix projectionMatrix = new UniformMatrix("projectionMatrix");
 
-	// Suyun dalgalanması için hareket çarpanı
+	// Dalga parametreleri
 	protected UniformFloat moveFactor = new UniformFloat("moveFactor");
-	// Suyun dalgalanma gücü (Bükülme miktarı)
 	protected UniformFloat waveStrength = new UniformFloat("waveStrength");
-	// Fresnel etkisi (Görüş açısına göre yansıma oranı) için kamera konumu
+	protected UniformFloat waveAmplitude = new UniformFloat("waveAmplitude");
+	protected UniformFloat waveFrequency = new UniformFloat("waveFrequency");
+
+	// Renk ve saydamlık
+	protected UniformVec3 waterColour = new UniformVec3("waterColour");
+	protected UniformFloat transparency = new UniformFloat("transparency");
+	protected UniformFloat colorMixFactor = new UniformFloat("colorMixFactor");
+
+	// Fresnel & Specular
+	protected UniformFloat shineDamper = new UniformFloat("shineDamper");
+	protected UniformFloat reflectivity = new UniformFloat("reflectivity");
+	protected UniformFloat fresnelPower = new UniformFloat("fresnelPower");
+
+	// Kamera ve Işık
 	protected UniformVec3 cameraPosition = new UniformVec3("cameraPosition");
-	// Suyun üzerindeki specular yansımaları için ışık yönü
 	protected UniformVec3 lightDirection = new UniformVec3("lightDirection");
 
-	// Kullanılan Dokular (Textures)
+	// Doku (Texture) sampler'ları
 	private UniformSampler reflectionTexture = new UniformSampler("reflectionTexture");
 	private UniformSampler refractionTexture = new UniformSampler("refractionTexture");
 	private UniformSampler dudvMap = new UniformSampler("dudvMap");
 	private UniformSampler normalMap = new UniformSampler("normalMap");
-	private UniformSampler depthMap = new UniformSampler("depthMap"); // Suyun kıyılarını yumuşatmak için
+	private UniformSampler depthMap = new UniformSampler("depthMap");
 
-	/**
-	 * Shader dosyasını derler ve Uniform değişkenlerinin yerlerini tespit eder.
-	 */
 	public WaterShader() {
 		super(VERTEX_SHADER, FRAGMENT_SHADER, "position");
-		super.storeAllUniformLocations(modelMatrix, viewMatrix, projectionMatrix, moveFactor, waveStrength,
-				cameraPosition, lightDirection, reflectionTexture, refractionTexture,
-				dudvMap, normalMap, depthMap);
+		super.storeAllUniformLocations(
+			modelMatrix, viewMatrix, projectionMatrix,
+			moveFactor, waveStrength, waveAmplitude, waveFrequency,
+			waterColour, transparency, colorMixFactor,
+			shineDamper, reflectivity, fresnelPower,
+			cameraPosition, lightDirection,
+			reflectionTexture, refractionTexture, dudvMap, normalMap, depthMap
+		);
 		connectTextureUnits();
 	}
 
-	/**
-	 * Shader içindeki texture sampler'larını OpenGL Doku Üniteleri (Texture Units) ile eşleştirir.
-	 */
 	private void connectTextureUnits() {
 		super.start();
 		reflectionTexture.loadTexUnit(0);

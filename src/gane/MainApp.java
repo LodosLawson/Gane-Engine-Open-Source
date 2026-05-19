@@ -71,13 +71,31 @@ public class MainApp {
 		activeScene.getWater().clear();
 
 		water.WaterTile waterr = new water.WaterTile(0f, 0f, -2.0f, 100f);
-
 		activeScene.getWater().add(waterr);
-		// Özellikleri dinamik olarak set et (Daha akıcı ve doğal dalgalar için değerleri optimize ettik)
-		waterr.setWaveSpeed(0.001f);
-		waterr.setWaveStrength(0.02f);
-		waterr.setHeight(-2.0f);
-		waterr.setSize(100f);
+
+		// Su yüzeyi ayarları
+		waterr.setWaveSpeed(0.001f);          // Dalga akış hızı
+		waterr.setWaveStrength(0.015f);       // Dalga bükülme (distortion) gücü
+		waterr.setWaveAmplitude(0.15f);       // Vertex dalga yüksekliği (3D dalga efekti)
+		waterr.setWaveFrequency(0.3f);        // Dalga frekansı (sıklık)
+
+		// Renk ve saydamlık
+		waterr.setWaterColor(0.0f, 0.25f, 0.4f);  // Koyu okyanus mavisi
+		waterr.setTransparency(0.55f);              // Yarı saydam
+		waterr.setColorMixFactor(0.15f);            // Su renginin görünürlüğü
+
+		// Derinlik efekti
+		waterr.setDepth(10.0f);
+		waterr.setDepthDarkness(0.7f);
+
+		// Sualtı kamera efekti
+		waterr.setUnderwaterFogDensity(0.06f);
+		waterr.setUnderwaterFogColor(0.0f, 0.12f, 0.25f);
+
+		// Yansıma kalitesi
+		waterr.setFresnelPower(0.6f);
+		waterr.setShineDamper(30.0f);
+		waterr.setReflectivity(0.9f);
 
 		activeScene.setLightDirection(new org.lwjgl.util.vector.Vector3f(-1f, 0f, 0f));
 		activeScene.setLightBrightness(1f);
