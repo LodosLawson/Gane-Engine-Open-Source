@@ -5,14 +5,14 @@ package water;
  * Her bir WaterTile (Su Fayansı), sabit boyutta bir dörtgendir.
  */
 public class WaterTile {
-	
+
 	// Her bir su fayansının temel boyutu (Genişlik ve Derinlik)
 	public static final float TILE_SIZE = 10;
-	
+
 	private float height; // Suyun Y eksenindeki yüksekliği
-	private float x, z;   // Suyun Dünya (World) üzerindeki konumu
-	private float size;   // Suyun boyutu
-	
+	private float x, z; // Suyun Dünya (World) üzerindeki konumu
+	private float size; // Suyun boyutu
+
 	// Her su tile'ının kendine ait dalgalanma hızı ve bükülme gücü
 	private float waveSpeed = 0.0005f;
 	private float waveStrength = 0.01f;
@@ -23,9 +23,9 @@ public class WaterTile {
 	 * 
 	 * @param centerX Merkez X koordinatı
 	 * @param centerZ Merkez Z koordinatı
-	 * @param height Suyun yüksekliği (Deniz seviyesi)
+	 * @param height  Suyun yüksekliği (Deniz seviyesi)
 	 */
-	public WaterTile(float centerX, float centerZ, float height){
+	public WaterTile(float centerX, float centerZ, float height) {
 		this(centerX, centerZ, height, TILE_SIZE);
 	}
 
@@ -34,10 +34,10 @@ public class WaterTile {
 	 * 
 	 * @param centerX Merkez X koordinatı
 	 * @param centerZ Merkez Z koordinatı
-	 * @param height Suyun yüksekliği (Deniz seviyesi)
-	 * @param size Suyun boyutu
+	 * @param height  Suyun yüksekliği (Deniz seviyesi)
+	 * @param size    Suyun boyutu
 	 */
-	public WaterTile(float centerX, float centerZ, float height, float size){
+	public WaterTile(float centerX, float centerZ, float height, float size) {
 		this.x = centerX;
 		this.z = centerZ;
 		this.height = height;
@@ -118,4 +118,5 @@ public class WaterTile {
 	public void updateMoveFactor() {
 		this.moveFactor = (this.moveFactor + this.waveSpeed) % 1f;
 	}
+
 }
