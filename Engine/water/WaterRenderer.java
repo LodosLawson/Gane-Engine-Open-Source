@@ -66,6 +66,12 @@ public class WaterRenderer {
 		for (WaterTile tile : water) {
 			Matrix4f modelMatrix = createModelMatrix(tile.getX(), tile.getHeight(), tile.getZ(), tile.getSize());
 			shader.modelMatrix.loadMatrix(modelMatrix);
+			
+			// Her su tile'ının kendi animasyonunu ve gücünü shader'a gönder
+			tile.updateMoveFactor();
+			shader.moveFactor.loadFloat(tile.getMoveFactor());
+			shader.waveStrength.loadFloat(tile.getWaveStrength());
+			
 			GL11.glDrawElements(GL11.GL_TRIANGLES, quad.getIndexCount(), GL11.GL_UNSIGNED_INT, 0);
 		}
 		finish();
@@ -90,12 +96,6 @@ public class WaterRenderer {
 		shader.projectionMatrix.loadMatrix(camera.getProjectionMatrix());
 		shader.viewMatrix.loadMatrix(camera.getViewMatrix());
 		shader.cameraPosition.loadVec3(camera.getPosition());
-
-		// Su dalgalarının akmasını sağlayan değeri artır
-		moveFactor += waveSpeed;
-		moveFactor %= 1; // Değerin 0 ile 1 arasında kalmasını sağla
-		shader.moveFactor.loadFloat(moveFactor);
-		shader.waveStrength.loadFloat(waveStrength);
 
 		shader.lightDirection.loadVec3(lightDir);
 
