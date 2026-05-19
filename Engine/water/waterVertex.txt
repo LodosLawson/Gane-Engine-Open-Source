@@ -24,7 +24,9 @@ void main(void) {
 	vec4 positionRelativeToCam = viewMatrix * worldPosition;
 	clipSpace = projectionMatrix * positionRelativeToCam;
 	gl_Position = clipSpace;
- 	textureCoords = vec2(position.x/2.0 + 0.5, position.y/2.0 + 0.5) * tiling;
+ 	
+	// Dünyadaki XZ koordinatlarına göre doku haritalama (Böylece su boyutu büyüse de dalgalar esnemez, tekrarlanır)
+ 	textureCoords = worldPosition.xz / 10.0;
  	toCameraVector = cameraPosition - worldPosition.xyz;
  	
 }

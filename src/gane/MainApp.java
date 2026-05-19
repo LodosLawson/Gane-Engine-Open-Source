@@ -73,9 +73,9 @@ public class MainApp {
 		water.WaterTile waterr = new water.WaterTile(0f, 0f, -2.0f, 100f);
 
 		activeScene.getWater().add(waterr);
-		// Özellikleri dinamik olarak set et
-		waterr.setWaveSpeed(0.02f);
-		waterr.setWaveStrength(0.3f);
+		// Özellikleri dinamik olarak set et (Daha akıcı ve doğal dalgalar için değerleri optimize ettik)
+		waterr.setWaveSpeed(0.001f);
+		waterr.setWaveStrength(0.02f);
 		waterr.setHeight(-2.0f);
 		waterr.setSize(100f);
 
