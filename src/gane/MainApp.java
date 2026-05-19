@@ -11,6 +11,8 @@ import renderEngine.RenderEngine;
 import scene.Scene;
 import steam.SteamManager;
 import scene.Entity;
+import scene.GameObject;
+import scene.KeyframeAnimationComponent;
 import scene.Skin;
 import textures.Texture;
 import loaders.ModelLoader;
@@ -21,6 +23,7 @@ import utils.MousePicker;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.util.vector.Vector3f;
+import scene.GameObject;
 
 public class MainApp {
 
@@ -36,7 +39,8 @@ public class MainApp {
 		// Set LWJGL native library path before loading any LWJGL classes
 		NativeLibraryLoader.loadNativeLibraries();
 
-		// 1. Oyun / Pencere Ayarlarını Yapılandır (Özel Pencere Başlığı, Çözünürlük ve İkon)
+		// 1. Oyun / Pencere Ayarlarını Yapılandır (Özel Pencere Başlığı, Çözünürlük ve
+		// İkon)
 		AppSettings.setup(1280, 720, false, "Gane Engine 3D Scene", "res/WoodFloor004_4K-PNG_Color.png");
 
 		// Steam API'yi başlat
@@ -50,7 +54,7 @@ public class MainApp {
 		// --- YÜKLEME EKRANI (LOADING SCREEN) BAŞLAT ---
 		// Kullanıcı istediği temayı verebilir (Örn: UITheme.neon())
 		guiRendering.LoadingScreen loadingScreen = new guiRendering.LoadingScreen(guiRendering.UITheme.neon());
-		
+
 		loadingScreen.render(10, "Motor Baslatiliyor...");
 		sleepSimulate(400); // Geliştiricinin asset'leri yüklediği zamanı simüle eder
 
@@ -64,12 +68,12 @@ public class MainApp {
 		Camera camera = new Camera();
 		activeScene = new Scene(camera, null, false);
 		activeScene.setLightDirection(new org.lwjgl.util.vector.Vector3f(-1f, 0f, 0f));
-		activeScene.setLightBrightness(1f); 
+		activeScene.setLightBrightness(1f);
 		activeScene.setAmbientLight(0.2f);
-		
+
 		MousePicker picker = new MousePicker(camera, camera.getProjectionMatrix());
 		boolean mouseWasDown = false;
-		
+
 		loadingScreen.render(70, "Sahne Olusturuldu...");
 		sleepSimulate(400);
 
@@ -77,7 +81,7 @@ public class MainApp {
 		UIManager uiManager = new UIManager(guiRendering.UITheme.neon());
 		uiManager.addButton(60, 110, 200, 48, "Hello World!",
 				() -> uiManager.showMessage("Hello World!"));
-				
+
 		gane.Menu.escMneu pauseMenu = new gane.Menu.escMneu();
 
 		loadingScreen.render(100, "Tamamlandi! Oyun Basliyor...");
@@ -123,6 +127,18 @@ public class MainApp {
 		// Zaten Scene içinde tanımlı ama yönünü değiştirebilirsin. (x, y, z)
 		activeScene.setLightDirection(new org.lwjgl.util.vector.Vector3f(0.5f, -1f, 0.5f));
 
+		// Çıkıntılı objeni tanımla
+		GameObject cikintiliObje = new GameObject("res/anim/Başlıksızz0001.obj",
+				"res/WoodFloor004_4K-PNG_Roughness.png");
+		// Animasyon bileşenini ekle
+		KeyframeAnimationComponent animasyon = new KeyframeAnimationComponent();
+		// 1. kareden 15. kareye kadar olan OBJ dosyalarını otomatik yükle
+		animasyon.loadFrames("res/anim/cikinti_", 1, 15, ".obj");
+		animasyon.setFPS(24f); // Saniyede 24 kare hızla oynat
+		animasyon.setLoop(true); // Sürekli tekrar etsin
+		cikintiliObje.addComponent(animasyon);
+		activeScene.addEntity(cikintiliObje);
+
 		// 2. Nokta/Spot Işığı (Point Light) - Sadece yakınındaki objeleri aydınlatır
 		// Parametreler: Pozisyon(x,y,z), Renk(R,G,B), Azalma/Zayıflama(Sabit, Doğrusal,
 		// Kare)
@@ -144,7 +160,7 @@ public class MainApp {
 						paused = !paused;
 						pauseMenu.setActive(paused);
 					}
-					
+
 					// --- KAMERA MODU DEĞİŞTİRME KISAYOLLARI ---
 					if (Keyboard.getEventKey() == Keyboard.KEY_1) {
 						camera.setMode(extra.Camera.CameraMode.EDITOR);
@@ -174,7 +190,7 @@ public class MainApp {
 					}
 				}
 			}
-			
+
 			float delta = renderEngine.getDisplayManager().getFrameTime();
 
 			if (!paused) {
@@ -183,13 +199,14 @@ public class MainApp {
 
 				// Sadece Editör modundayken (ve Shift'e basılı DEĞİLKEN) obje seçimi yap
 				boolean isMouseDown = Mouse.isButtonDown(0);
-				if (camera.getMode() == extra.Camera.CameraMode.EDITOR && 
-					!(Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT))) {
-					
+				if (camera.getMode() == extra.Camera.CameraMode.EDITOR &&
+						!(Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT))) {
+
 					if (isMouseDown && !mouseWasDown) {
 						for (var entity : activeScene.getAllEntities()) {
 							// 3.0f yarıçaplı bir küre çarpışma testi
-							if (MousePicker.intersects(camera.getPosition(), picker.getCurrentRay(), entity.getPosition(), 3.0f)) {
+							if (MousePicker.intersects(camera.getPosition(), picker.getCurrentRay(),
+									entity.getPosition(), 3.0f)) {
 								uiManager.showMessage("Secilen Obje: " + entity.getClass().getSimpleName());
 								break; // İlk bulduğunu seç ve çık
 							}
@@ -248,10 +265,10 @@ public class MainApp {
 			if (!paused) {
 				uiManager.render();
 			}
-			
+
 			// Duraklatma menüsünü çiz
 			pauseMenu.render();
-			
+
 			renderEngine.update();
 		}
 
@@ -279,6 +296,9 @@ public class MainApp {
 	}
 
 	private static void sleepSimulate(long ms) {
-		try { Thread.sleep(ms); } catch (InterruptedException e) {}
+		try {
+			Thread.sleep(ms);
+		} catch (InterruptedException e) {
+		}
 	}
 }

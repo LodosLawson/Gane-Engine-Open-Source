@@ -26,6 +26,14 @@ public class GameObject extends Entity {
 		super(loadModelSafe(objFilePath), loadSkinSafe(colorFilePath, roughnessFilePath));
 	}
 
+	/**
+	 * Otomatik Model ve Kaplama yükleyen İki Parametreli Constructor.
+	 * Sadece model ve ana renk haritası (diffuse) yüklemek için kullanılır.
+	 */
+	public GameObject(String objFilePath, String colorFilePath) {
+		super(loadModelSafe(objFilePath), loadSkinSafe(colorFilePath, null));
+	}
+
 	public GameObject(Model model, Skin skin) {
 		super(model, skin);
 	}
