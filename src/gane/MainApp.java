@@ -73,8 +73,11 @@ public class MainApp {
 		water.WaterTile waterr = new water.WaterTile(0f, 0f, -2.0f, 100f);
 
 		activeScene.getWater().add(waterr);
+		// Özellikleri dinamik olarak set et
 		waterr.setWaveSpeed(0.02f);
 		waterr.setWaveStrength(0.3f);
+		waterr.setHeight(-2.0f);
+		waterr.setSize(100f);
 
 		activeScene.setLightDirection(new org.lwjgl.util.vector.Vector3f(-1f, 0f, 0f));
 		activeScene.setLightBrightness(1f);

@@ -89,7 +89,8 @@ void main(void) {
 	out_Color = mix(out_Color, vec4(waterColour, 1.0), 0.2);
 	out_Color.a = clamp(waterDepth/0.5, 0.0, 1.0);
 	
-	float disFactor = smoothlyStep(15.0, 16.0, distance(center, pass_pos));
-	out_Color.rgb = mix(out_Color.rgb, vec3(1.0), disFactor);
+	// Mesafe bazlı beyazlama filtresini devre dışı bırakıyoruz (tüm su yüzeyinin mavi/normal kalması için)
+	// float disFactor = smoothlyStep(15.0, 16.0, distance(center, pass_pos));
+	// out_Color.rgb = mix(out_Color.rgb, vec3(1.0), disFactor);
 	
 }
