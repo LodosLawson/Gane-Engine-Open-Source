@@ -10,9 +10,9 @@ import org.lwjgl.util.vector.Vector3f;
 public class Entity {
 	
 	// Objenin geometrik şekli (VAO)
-	private final Model model;
+	private Model model;
 	// Objenin dış görünüşü (Dokular/Texture)
-	private final Skin skin;
+	private Skin skin;
 	// Objenin 3B uzaydaki konumu
 	private final Vector3f position = new Vector3f(0, 0, 0);
 	// Objenin 3B uzaydaki dönme açısı (Derece cinsinden X, Y, Z)
@@ -48,9 +48,19 @@ public class Entity {
 		return model;
 	}
 
+	/** Objenin modelini dinamik olarak değiştirir (Anahtar kare animasyonları için) */
+	public void setModel(Model model) {
+		this.model = model;
+	}
+
 	/** @return Objenin kaplama özelliklerini döndürür */
 	public Skin getSkin() {
 		return skin;
+	}
+
+	/** Objenin kaplamasını dinamik olarak değiştirir */
+	public void setSkin(Skin skin) {
+		this.skin = skin;
 	}
 	
 	/** @return Objenin şu anki pozisyonunu döndürür */
