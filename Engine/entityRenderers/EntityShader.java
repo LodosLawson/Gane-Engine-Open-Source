@@ -86,12 +86,20 @@ public class EntityShader extends ShaderProgram {
 	protected UniformFloat uTime = new UniformFloat("uTime");
 	protected shaders.UniformVec2 uWindDir = new shaders.UniformVec2("uWindDir");
 
+	// Skeletal Animation (Skinning) Uniforms
+	private static final int MAX_JOINTS = 50;
+	protected UniformMatrix[] jointTransforms = new UniformMatrix[MAX_JOINTS];
+
 	/**
 	 * Shader programÄ±nÄ± baÅŸlatan ve deÄŸiÅŸkenleri baÄŸlayan yapÄ±cÄ± (constructor) metot.
 	 */
 	public EntityShader() {
-		super(VERTEX_SHADER, FRAGMENT_SHADER, "in_position", "in_textureCoords", "in_normal");
+		super(VERTEX_SHADER, FRAGMENT_SHADER, "in_position", "in_textureCoords", "in_normal", "in_jointIndices", "in_weights");
 		
+		for (int i = 0; i < MAX_JOINTS; i++) {
+			jointTransforms[i] = new UniformMatrix("jointTransforms[" + i + "]");
+		}
+
 		for (int i = 0; i < 4; i++) {
 			pointLightPos[i] = new UniformVec3("pointLightPos[" + i + "]");
 			pointLightColor[i] = new UniformVec3("pointLightColor[" + i + "]");
@@ -134,6 +142,10 @@ public class EntityShader extends ShaderProgram {
 		list.add(uNumCloudShadows);
 		list.add(uTime);
 		list.add(uWindDir);
+
+		for (int i = 0; i < MAX_JOINTS; i++) {
+			list.add(jointTransforms[i]);
+		}
 
 		super.storeAllUniformLocations(list.toArray(new shaders.Uniform[0]));
 		connectTextureUnits();

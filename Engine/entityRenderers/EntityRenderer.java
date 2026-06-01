@@ -165,6 +165,21 @@ public class EntityRenderer {
 					
 					shader.transformationMatrix.loadMatrix(transformMatrix);
 					
+					// Upload Skeletal Animation Matrices
+					org.lwjgl.util.vector.Matrix4f[] joints = entity.getJointTransforms();
+					if (joints != null) {
+						for (int i = 0; i < Math.min(joints.length, 50); i++) {
+							shader.jointTransforms[i].loadMatrix(joints[i]);
+						}
+					} else {
+						// Eğer modelde kemik yoksa default olarak Identity Matrix yükle
+						org.lwjgl.util.vector.Matrix4f identity = new org.lwjgl.util.vector.Matrix4f();
+						identity.setIdentity();
+						for (int i = 0; i < 50; i++) {
+							shader.jointTransforms[i].loadMatrix(identity);
+						}
+					}
+					
 					if (scene.isOcclusionCullingEnabled()) entity.getOcclusionQuery().start();
 					GL11.glDrawElements(GL11.GL_TRIANGLES, vao.getIndexCount(), GL11.GL_UNSIGNED_INT, 0);
 					if (scene.isOcclusionCullingEnabled()) entity.getOcclusionQuery().end();
@@ -194,6 +209,19 @@ public class EntityRenderer {
 				}
 				
 				shader.transformationMatrix.loadMatrix(transformMatrix);
+				
+				org.lwjgl.util.vector.Matrix4f[] joints = entity.getJointTransforms();
+				if (joints != null) {
+					for (int i = 0; i < Math.min(joints.length, 50); i++) {
+						shader.jointTransforms[i].loadMatrix(joints[i]);
+					}
+				} else {
+					org.lwjgl.util.vector.Matrix4f identity = new org.lwjgl.util.vector.Matrix4f();
+					identity.setIdentity();
+					for (int i = 0; i < 50; i++) {
+						shader.jointTransforms[i].loadMatrix(identity);
+					}
+				}
 				
 				entity.getOcclusionQuery().start();
 				GL11.glDrawElements(GL11.GL_TRIANGLES, vao.getIndexCount(), GL11.GL_UNSIGNED_INT, 0);

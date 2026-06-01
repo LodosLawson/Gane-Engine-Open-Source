@@ -268,4 +268,14 @@ public class Entity {
 		int row = textureIndex / skin.getNumberOfRows();
 		return (float) row / (float) skin.getNumberOfRows();
 	}
+
+	private org.lwjgl.util.vector.Matrix4f[] jointTransforms;
+
+	public org.lwjgl.util.vector.Matrix4f[] getJointTransforms() {
+		return jointTransforms;
+	}
+
+	public void setJointTransforms(org.lwjgl.util.vector.Matrix4f[] jointTransforms) {
+		this.jointTransforms = jointTransforms;
+	}
 }

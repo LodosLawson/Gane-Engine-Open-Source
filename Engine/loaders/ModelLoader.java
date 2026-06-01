@@ -26,8 +26,13 @@ public class ModelLoader {
 			data = OBJFileLoader.loadOBJ(modelFile);
 		}
 		Vao vao = Vao.create();
-		vao.storeData(data.getIndices(), data.getVertexCount(), data.getVertices(), data.getTextureCoords(),
-				data.getNormals());
+		if (data.getJointIds() != null && data.getVertexWeights() != null) {
+			vao.storeData(data.getIndices(), data.getVertexCount(), data.getVertices(), data.getTextureCoords(),
+					data.getNormals(), data.getJointIds(), data.getVertexWeights());
+		} else {
+			vao.storeData(data.getIndices(), data.getVertexCount(), data.getVertices(), data.getTextureCoords(),
+					data.getNormals());
+		}
 		return new Model(vao, data);
 	}
 
@@ -43,11 +48,16 @@ public class ModelLoader {
 			for (int i = 0; i < vertices.length; i++) {
 				vertices[i] *= scale;
 			}
-			data = new ModelData(vertices, data.getTextureCoords(), data.getNormals(), data.getIndices(), data.getFurthestPoint() * scale);
+			data = new ModelData(vertices, data.getTextureCoords(), data.getNormals(), data.getIndices(), data.getJointIds(), data.getVertexWeights(), data.getFurthestPoint() * scale);
 		}
 		Vao vao = Vao.create();
-		vao.storeData(data.getIndices(), data.getVertexCount(), data.getVertices(), data.getTextureCoords(),
-				data.getNormals());
+		if (data.getJointIds() != null && data.getVertexWeights() != null) {
+			vao.storeData(data.getIndices(), data.getVertexCount(), data.getVertices(), data.getTextureCoords(),
+					data.getNormals(), data.getJointIds(), data.getVertexWeights());
+		} else {
+			vao.storeData(data.getIndices(), data.getVertexCount(), data.getVertices(), data.getTextureCoords(),
+					data.getNormals());
+		}
 		return new Model(vao, data);
 	}
 

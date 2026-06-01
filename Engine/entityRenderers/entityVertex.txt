@@ -6,6 +6,10 @@ in vec3 in_position;
 in vec2 in_textureCoords;
 // Yüzeyin baktığı yön (ışık hesabı için gereklidir).
 in vec3 in_normal;
+// İskelet animasyonu için kemik indexleri
+in vec4 in_jointIndices;
+// İskelet animasyonu için kemik ağırlıkları
+in vec4 in_weights;
 
 // Fragment shader'a aktarılacak texture koordinatları.
 out vec2 pass_textureCoords;
@@ -38,11 +42,39 @@ uniform mat4 toShadowMapSpace;
 uniform float numberOfRows;
 uniform vec2 textureOffset;
 
+// Skeletal Animation (Skinning) Uniforms
+const int MAX_JOINTS = 50;
+uniform mat4 jointTransforms[MAX_JOINTS];
+
 // Shader'ın ana fonksiyonu. Her bir köşe (vertex) için çalışır.
 void main(void){
 
+	vec4 totalLocalPos = vec4(0.0);
+	vec4 totalNormal = vec4(0.0);
+
+	// İskelet Animasyonu (Skinning) Hesaplaması
+	if (in_weights.x == 0.0 && in_weights.y == 0.0 && in_weights.z == 0.0 && in_weights.w == 0.0) {
+		// Statik model (kemiksiz)
+		totalLocalPos = vec4(in_position, 1.0);
+		totalNormal = vec4(in_normal, 0.0);
+	} else {
+		// Animasyonlu model (kemikli)
+		for(int i=0; i<4; i++) {
+			float weight = in_weights[i];
+			if(weight > 0.0) {
+				int jointIndex = int(in_jointIndices[i]);
+				mat4 jointTransform = jointTransforms[jointIndex];
+				vec4 posePosition = jointTransform * vec4(in_position, 1.0);
+				totalLocalPos += posePosition * weight;
+				
+				vec4 worldNormal = jointTransform * vec4(in_normal, 0.0);
+				totalNormal += worldNormal * weight;
+			}
+		}
+	}
+
 	// Nesnenin dünya üzerindeki pozisyonu.
-	vec4 worldPosition = transformationMatrix * vec4(in_position, 1.0);
+	vec4 worldPosition = transformationMatrix * totalLocalPos;
 	pass_pos = worldPosition.xz;
 	
 	// Köşenin ekrandaki son pozisyonunu hesapla.
@@ -55,7 +87,7 @@ void main(void){
 	pass_textureCoords = (in_textureCoords / numberOfRows) + textureOffset;
 	
 	// Modelin normalini belirle (sahte ışıklandırma varsa normal her zaman yukarı bakar)
-	vec3 actualNormal = in_normal;
+	vec3 actualNormal = totalNormal.xyz;
 	if(useFakeLighting > 0.5) {
 		actualNormal = vec3(0.0, 1.0, 0.0);
 	}

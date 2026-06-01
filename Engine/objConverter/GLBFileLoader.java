@@ -58,12 +58,22 @@ public class GLBFileLoader {
             int positionAccessorIndex = attributes.getInt("POSITION");
             int normalAccessorIndex = attributes.has("NORMAL") ? attributes.getInt("NORMAL") : -1;
             int texCoordAccessorIndex = attributes.has("TEXCOORD_0") ? attributes.getInt("TEXCOORD_0") : -1;
+            int jointsAccessorIndex = attributes.has("JOINTS_0") ? attributes.getInt("JOINTS_0") : -1;
+            int weightsAccessorIndex = attributes.has("WEIGHTS_0") ? attributes.getInt("WEIGHTS_0") : -1;
             int indicesAccessorIndex = firstPrimitive.has("indices") ? firstPrimitive.getInt("indices") : -1;
             
             float[] positions = readFloatArray(positionAccessorIndex, gltf, binBuffer);
             float[] normals = normalAccessorIndex != -1 ? readFloatArray(normalAccessorIndex, gltf, binBuffer) : new float[positions.length];
             float[] texCoords = texCoordAccessorIndex != -1 ? readFloatArray(texCoordAccessorIndex, gltf, binBuffer) : new float[(positions.length / 3) * 2];
             int[] indices = indicesAccessorIndex != -1 ? readIntArray(indicesAccessorIndex, gltf, binBuffer) : generateLinearIndices(positions.length / 3);
+            
+            float[] joints = null;
+            if (jointsAccessorIndex != -1) {
+            	int[] intJoints = readIntArray(jointsAccessorIndex, gltf, binBuffer);
+            	joints = new float[intJoints.length];
+            	for(int i=0; i<intJoints.length; i++) joints[i] = (float)intJoints[i];
+            }
+            float[] weights = weightsAccessorIndex != -1 ? readFloatArray(weightsAccessorIndex, gltf, binBuffer) : null;
             
             // 5. Calculate furthest point
             float furthestPoint = 0;
@@ -78,7 +88,31 @@ public class GLBFileLoader {
             }
             furthestPoint = (float) Math.sqrt(furthestPoint);
             
-            return new ModelData(positions, texCoords, normals, indices, furthestPoint);
+            ModelData modelData = new ModelData(positions, texCoords, normals, indices, joints, weights, furthestPoint);
+            
+            // 6. Extract Animation Data
+            if (gltf.has("skins") && joints != null) {
+            	org.json.JSONArray skins = gltf.getJSONArray("skins");
+            	org.json.JSONObject skin = skins.getJSONObject(0);
+            	org.json.JSONArray jointsArray = skin.getJSONArray("joints");
+            	int inverseBindAccessorIndex = skin.getInt("inverseBindMatrices");
+            	float[] inverseBindMatrices = readFloatArray(inverseBindAccessorIndex, gltf, binBuffer);
+            	
+            	scene.animation.Joint[] allJoints = GLBAnimatorBuilder.parseSkeleton(gltf, binBuffer, inverseBindMatrices, jointsArray);
+            	
+            	if (allJoints != null && allJoints.length > 0) {
+            		scene.animation.Joint rootJoint = null;
+            		// Find root joint (the one without parent in allJoints? Actually, just the first node or any node that isn't a child of another joint)
+            		// We can just set the root as the first joint in jointsArray
+            		rootJoint = allJoints[0]; 
+            		
+            		scene.animation.Animation anim = GLBAnimatorBuilder.parseAnimation(gltf, binBuffer, jointsArray, allJoints);
+            		
+            		modelData.setAnimationData(rootJoint, allJoints.length, anim);
+            	}
+            }
+            
+            return modelData;
 
         } catch (Exception e) {
             System.err.println("Failed to load GLB: " + file.getPath());
@@ -87,7 +121,7 @@ public class GLBFileLoader {
         }
     }
 
-    private static float[] readFloatArray(int accessorIndex, JSONObject gltf, ByteBuffer binBuffer) {
+    public static float[] readFloatArray(int accessorIndex, JSONObject gltf, ByteBuffer binBuffer) {
         JSONObject accessor = gltf.getJSONArray("accessors").getJSONObject(accessorIndex);
         int bufferViewIndex = accessor.getInt("bufferView");
         JSONObject bufferView = gltf.getJSONArray("bufferViews").getJSONObject(bufferViewIndex);
@@ -101,6 +135,9 @@ public class GLBFileLoader {
         if (type.equals("VEC2")) numComponents = 2;
         if (type.equals("VEC3")) numComponents = 3;
         if (type.equals("VEC4")) numComponents = 4;
+        if (type.equals("MAT2")) numComponents = 4;
+        if (type.equals("MAT3")) numComponents = 9;
+        if (type.equals("MAT4")) numComponents = 16;
         
         int byteStride = bufferView.has("byteStride") ? bufferView.getInt("byteStride") : (numComponents * 4);
         
@@ -114,7 +151,7 @@ public class GLBFileLoader {
         return result;
     }
 
-    private static int[] readIntArray(int accessorIndex, JSONObject gltf, ByteBuffer binBuffer) {
+    public static int[] readIntArray(int accessorIndex, JSONObject gltf, ByteBuffer binBuffer) {
         JSONObject accessor = gltf.getJSONArray("accessors").getJSONObject(accessorIndex);
         int bufferViewIndex = accessor.getInt("bufferView");
         JSONObject bufferView = gltf.getJSONArray("bufferViews").getJSONObject(bufferViewIndex);
@@ -123,19 +160,27 @@ public class GLBFileLoader {
                          (bufferView.has("byteOffset") ? bufferView.getInt("byteOffset") : 0);
         int count = accessor.getInt("count");
         int componentType = accessor.getInt("componentType");
+        String type = accessor.getString("type");
         
-        int byteStride = bufferView.has("byteStride") ? bufferView.getInt("byteStride") : 
-                         (componentType == 5123 ? 2 : (componentType == 5125 ? 4 : 1));
+        int numComponents = 1;
+        if (type.equals("VEC2")) numComponents = 2;
+        if (type.equals("VEC3")) numComponents = 3;
+        if (type.equals("VEC4")) numComponents = 4;
         
-        int[] result = new int[count];
+        int bytesPerComponent = (componentType == 5123 ? 2 : (componentType == 5125 ? 4 : 1));
+        int byteStride = bufferView.has("byteStride") ? bufferView.getInt("byteStride") : (bytesPerComponent * numComponents);
+        
+        int[] result = new int[count * numComponents];
         for (int i = 0; i < count; i++) {
             binBuffer.position(byteOffset + i * byteStride);
-            if (componentType == 5123) { // UNSIGNED_SHORT
-                result[i] = binBuffer.getShort() & 0xFFFF;
-            } else if (componentType == 5125) { // UNSIGNED_INT
-                result[i] = binBuffer.getInt();
-            } else if (componentType == 5121) { // UNSIGNED_BYTE
-                result[i] = binBuffer.get() & 0xFF;
+            for (int j = 0; j < numComponents; j++) {
+	            if (componentType == 5123) { // UNSIGNED_SHORT
+	                result[i * numComponents + j] = binBuffer.getShort() & 0xFFFF;
+	            } else if (componentType == 5125) { // UNSIGNED_INT
+	                result[i * numComponents + j] = binBuffer.getInt();
+	            } else if (componentType == 5121) { // UNSIGNED_BYTE
+	                result[i * numComponents + j] = binBuffer.get() & 0xFF;
+	            }
             }
         }
         return result;

@@ -36,6 +36,26 @@ public class GameObject extends Entity {
 
 	public GameObject(Model model, Skin skin) {
 		super(model, skin);
+		initAnimation(model);
+	}
+
+	private void initAnimation(Model model) {
+		if (model != null && model.getModelData() != null) {
+			objConverter.ModelData data = model.getModelData();
+			if (data.getAnimation() != null && data.getRootJoint() != null) {
+				scene.animation.Animator animator = new scene.animation.Animator(this, data.getRootJoint(), data.getJointCount());
+				animator.doAnimation(data.getAnimation());
+				this.addComponent(new Component() {
+					@Override
+					public void start() {}
+
+					@Override
+					public void update(float delta) {
+						animator.update(delta);
+					}
+				});
+			}
+		}
 	}
 	
 	private static Model loadModelSafe(String objPath) {
