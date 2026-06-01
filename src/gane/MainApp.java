@@ -86,6 +86,27 @@ public class MainApp {
 		bird.addComponent(birdController);
 		scene.addEntity(bird);
 
+		// Yapay Zekalı Diğer Kuşları Ekle (AI Birds)
+		java.util.Random rand = new java.util.Random();
+		for (int i = 0; i < 10; i++) {
+			scene.GameObject aiBird = new scene.GameObject("res/DEFAULT_BIRD/DEF_BIRD.glb", "res/DEFAULT_BIRD/texture_0.png");
+			// Oyuncunun çevresine rastgele dağıt
+			float startX = 64.0f + (rand.nextFloat() * 200f - 100f);
+			float startZ = 50.0f + (rand.nextFloat() * 200f - 100f);
+			float startY = terrain.getHeightAt(startX, startZ) + 40f + rand.nextFloat() * 30f;
+			
+			aiBird.getPosition().set(startX, startY, startZ);
+			aiBird.setScale(5.0f); // Aynı boyutta olsunlar
+			
+			scene.BirdAIController aiController = new scene.BirdAIController(terrain);
+			aiController.setModelYawOffset(180.0f);
+			aiController.setModelPitchOffset(-90.0f);
+			aiController.setModelRollOffset(0.0f);
+			aiBird.addComponent(aiController);
+			
+			scene.addEntity(aiBird);
+		}
+
 		// 7. Atmosfer bulutları aktiftir (AtmosphereSky varsayılan olarak cloudsEnabled
 		// = true)
 		atmoSky.setCloudsEnabled(true);

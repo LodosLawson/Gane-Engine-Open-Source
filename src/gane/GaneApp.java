@@ -146,6 +146,11 @@ public abstract class GaneApp {
             // Kamera hareketi
             camera.move();
 
+            // Tüm nesneleri güncelle (Bileşenleri ve animasyonları çalıştırır)
+            for (int i = 0; i < scene.getAllEntities().size(); i++) {
+                scene.getAllEntities().get(i).update(delta);
+            }
+
             // GeliÅŸtirici gÃ¼ncellemesi
             onUpdate(delta);
 
