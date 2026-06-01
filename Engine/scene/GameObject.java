@@ -17,6 +17,7 @@ public class GameObject extends Entity {
 	private List<Component> components = new ArrayList<>();
 	private static ModelLoader modelLoader = new ModelLoader();
 	private boolean started = false;
+	private scene.animation.Animator animator;
 
 	/**
 	 * Otomatik Model ve Kaplama yükleyen Standart Constructor.
@@ -24,6 +25,7 @@ public class GameObject extends Entity {
 	 */
 	public GameObject(String objFilePath, String colorFilePath, String roughnessFilePath) {
 		super(loadModelSafe(objFilePath), loadSkinSafe(colorFilePath, roughnessFilePath));
+		initAnimation(getModel());
 	}
 
 	/**
@@ -32,6 +34,7 @@ public class GameObject extends Entity {
 	 */
 	public GameObject(String objFilePath, String colorFilePath) {
 		super(loadModelSafe(objFilePath), loadSkinSafe(colorFilePath, null));
+		initAnimation(getModel());
 	}
 
 	public GameObject(Model model, Skin skin) {
@@ -39,19 +42,25 @@ public class GameObject extends Entity {
 		initAnimation(model);
 	}
 
+	public scene.animation.Animator getAnimator() {
+		return animator;
+	}
+
 	private void initAnimation(Model model) {
 		if (model != null && model.getModelData() != null) {
 			objConverter.ModelData data = model.getModelData();
 			if (data.getAnimation() != null && data.getRootJoint() != null) {
-				scene.animation.Animator animator = new scene.animation.Animator(this, data.getRootJoint(), data.getJointCount());
-				animator.doAnimation(data.getAnimation());
+				this.animator = new scene.animation.Animator(this, data.getRootJoint(), data.getJointCount());
+				this.animator.doAnimation(data.getAnimation());
 				this.addComponent(new Component() {
 					@Override
 					public void start() {}
 
 					@Override
 					public void update(float delta) {
-						animator.update(delta);
+						if (animator != null) {
+							animator.update(delta);
+						}
 					}
 				});
 			}

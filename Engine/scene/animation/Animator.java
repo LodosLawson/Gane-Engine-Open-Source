@@ -15,6 +15,8 @@ public class Animator {
 	
 	private Animation currentAnimation;
 	private float animationTime = 0;
+	private boolean paused = false;
+	private float playSpeed = 1.0f;
 
 	public Animator(Entity entity, Joint rootJoint, int jointCount) {
 		this.entity = entity;
@@ -33,15 +35,35 @@ public class Animator {
 	}
 
 	public void update(float delta) {
-		if (currentAnimation == null) {
+		if (currentAnimation == null || paused) {
 			return;
 		}
-		animationTime += delta;
+		animationTime += delta * playSpeed;
 		if (animationTime > currentAnimation.getLength()) {
 			this.animationTime %= currentAnimation.getLength();
 		}
 		Map<Integer, Matrix4f> currentPose = calculateCurrentAnimationPose();
 		applyPoseToJoints(currentPose, rootJoint, new Matrix4f());
+	}
+
+	public void pause() {
+		this.paused = true;
+	}
+
+	public void resume() {
+		this.paused = false;
+	}
+
+	public void setSpeed(float speed) {
+		this.playSpeed = speed;
+	}
+
+	public boolean isPaused() {
+		return paused;
+	}
+
+	public float getSpeed() {
+		return playSpeed;
 	}
 
 	private Map<Integer, Matrix4f> calculateCurrentAnimationPose() {

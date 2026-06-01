@@ -79,6 +79,7 @@ public class MainApp {
 		scene.GameObject bird = new scene.GameObject("res/DEFAULT_BIRD/DEF_BIRD.glb", "res/DEFAULT_BIRD/texture_0.png");
 		bird.getPosition().set(64, 45, 50); // Kuşu kameranın önüne koy
 		bird.setScale(5.0f); // Kuşu 5 kat büyüt ki gözüksün
+		bird.addComponent(new scene.BirdPlayerController(camera, terrain));
 		scene.addEntity(bird);
 
 		// 7. Atmosfer bulutları aktiftir (AtmosphereSky varsayılan olarak cloudsEnabled
@@ -161,59 +162,9 @@ public class MainApp {
 				vKeyPressed = false;
 			}
 
-			// Player'ı hareket ettir (Sadece POV modlarında çalışır)
-			if (camera.getMode() != extra.Camera.CameraMode.FREE) {
-				float moveSpeed = 30.0f * delta; // Kuş uçuş hızı
-				float currentYaw = player.getRotation().y;
-				float targetYaw = currentYaw;
-				boolean isMoving = false;
-
-				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_W)) {
-					player.getPosition().x += moveSpeed * Math.sin(Math.toRadians(camera.getYaw()));
-					player.getPosition().z -= moveSpeed * Math.cos(Math.toRadians(camera.getYaw()));
-					targetYaw = 180 - camera.getYaw();
-					isMoving = true;
-				}
-				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_S)) {
-					player.getPosition().x -= moveSpeed * Math.sin(Math.toRadians(camera.getYaw()));
-					player.getPosition().z += moveSpeed * Math.cos(Math.toRadians(camera.getYaw()));
-					targetYaw = -camera.getYaw();
-					isMoving = true;
-				}
-				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_A)) {
-					player.getPosition().x -= moveSpeed * Math.cos(Math.toRadians(camera.getYaw()));
-					player.getPosition().z -= moveSpeed * Math.sin(Math.toRadians(camera.getYaw()));
-					targetYaw = 90 - camera.getYaw();
-					isMoving = true;
-				}
-				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_D)) {
-					player.getPosition().x += moveSpeed * Math.cos(Math.toRadians(camera.getYaw()));
-					player.getPosition().z += moveSpeed * Math.sin(Math.toRadians(camera.getYaw()));
-					targetYaw = 270 - camera.getYaw();
-					isMoving = true;
-				}
-				
-				// Uçuş kontrolleri
-				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_SPACE)) {
-					player.getPosition().y += moveSpeed;
-				}
-				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_LSHIFT)) {
-					player.getPosition().y -= moveSpeed;
-				}
-
-				// Yön interpolasyonu (Smooth rotation)
-				if (isMoving) {
-					float diff = targetYaw - currentYaw;
-					while (diff < -180) diff += 360;
-					while (diff > 180) diff -= 360;
-					player.getRotation().y = currentYaw + diff * 10f * delta;
-				}
-
-				// Oyuncuyu yere yapıştır (Arazi Yüksekliğinin altına düşmesin)
-				float h = terrain.getHeightAt(player.getPosition().x, player.getPosition().z);
-				if (player.getPosition().y < h) {
-					player.getPosition().y = h;
-				}
+			// Tüm nesneleri güncelle (Bileşenleri ve animasyonları çalıştırır)
+			for (int i = 0; i < scene.getAllEntities().size(); i++) {
+				scene.getAllEntities().get(i).update(delta);
 			}
 
 			// --- ARAZİ VE OKYANUS KONTROLLERİ ---
