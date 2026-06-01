@@ -79,7 +79,9 @@ public class MainApp {
 		scene.GameObject bird = new scene.GameObject("res/DEFAULT_BIRD/DEF_BIRD.glb", "res/DEFAULT_BIRD/texture_0.png");
 		bird.getPosition().set(64, 45, 50); // Kuşu kameranın önüne koy
 		bird.setScale(5.0f); // Kuşu 5 kat büyüt ki gözüksün
-		bird.addComponent(new scene.BirdPlayerController(camera, terrain));
+		scene.BirdPlayerController birdController = new scene.BirdPlayerController(camera, terrain);
+		birdController.setModelYawOffset(180.0f); // Blender modelleri için 180 derece dönüş düzeltmesi (gerekirse 90f, 0f veya -90f ile değiştirilebilir)
+		bird.addComponent(birdController);
 		scene.addEntity(bird);
 
 		// 7. Atmosfer bulutları aktiftir (AtmosphereSky varsayılan olarak cloudsEnabled

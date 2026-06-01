@@ -7,7 +7,7 @@ set BIN=%PROJECT_DIR%bin
 set LIB=%PROJECT_DIR%lwjgl-2.9.3\jar
 set NATIVES=%PROJECT_DIR%lwjgl-2.9.3\native\windows
 
-set CP=%BIN%;%LIB%\lwjgl.jar;%LIB%\lwjgl_util.jar;%LIB%\lwjgl_util_applet.jar;%LIB%\jinput.jar;%LIB%\lwjgl_test.jar;%LIB%\lwjgl-debug.jar;%LIB%\asm-debug-all.jar;%PROJECT_DIR%lib\pngdecoder.jar;%PROJECT_DIR%lib\steamworks4j.jar
+set CP=%BIN%;%LIB%\lwjgl.jar;%LIB%\lwjgl_util.jar;%LIB%\lwjgl_util_applet.jar;%LIB%\jinput.jar;%LIB%\lwjgl_test.jar;%LIB%\lwjgl-debug.jar;%LIB%\asm-debug-all.jar;%PROJECT_DIR%lib\pngdecoder.jar;%PROJECT_DIR%lib\steamworks4j.jar;%PROJECT_DIR%lib\json.jar
 
 java -Djava.library.path="%NATIVES%" -cp "%CP%" gane.Main
 

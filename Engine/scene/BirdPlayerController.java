@@ -22,10 +22,19 @@ public class BirdPlayerController extends Component {
 
 	private float hoverTime = 0.0f;
 	private boolean onGround = false;
+	private float modelYawOffset = 0.0f; // Blender/GLB export yaw offset (Varsayılan 0)
 
 	public BirdPlayerController(Camera camera, FlatTerrain terrain) {
 		this.camera = camera;
 		this.terrain = terrain;
+	}
+
+	public void setModelYawOffset(float offset) {
+		this.modelYawOffset = offset;
+	}
+
+	public float getModelYawOffset() {
+		return modelYawOffset;
 	}
 
 	@Override
@@ -132,7 +141,8 @@ public class BirdPlayerController extends Component {
 			z += moveZ;
 
 			// Pürüzsüz Yönelme (Smooth Rotation)
-			float diff = targetYaw - currentYaw;
+			float targetVisualYaw = targetYaw + modelYawOffset;
+			float diff = targetVisualYaw - currentYaw;
 			while (diff < -180) diff += 360;
 			while (diff > 180) diff -= 360;
 			gameObject.getRotation().y = currentYaw + diff * 10f * delta;
