@@ -19,6 +19,18 @@ public class Entity {
 	private final Vector3f rotation = new Vector3f(0, 0, 0);
 	// Objenin ölçek çarpanı (Boyutu)
 	private float scale = 1.0f;
+	// Frustum Culling için objenin kapsama yarıçapı
+	private float cullingRadius = 10.0f;
+	
+	// Occlusion Culling için görünürlük bayrağı ve GPU sorgusu
+	private boolean visible = true;
+	private openglObjects.Query occlusionQuery;
+	
+	// LOD Modelleri (Kamera uzaklaştıkça poligonu düşen modeller)
+	private Model lod1Model; // Orta Mesafe
+	private Model lod2Model; // Uzak Mesafe
+	private float lod1Distance = 250.0f; // LOD1 modeline geçiş mesafesi
+	private float lod2Distance = 600.0f; // LOD2 modeline geçiş mesafesi
 	
 	// Fizik motoru ile etkileşimi sağlayacak bileşen (Yerçekimi, hız, kütle vb.)
 	private physics.PhysicsComponent physicsComponent;
@@ -31,6 +43,12 @@ public class Entity {
 	private boolean seenUnderWater = false;
 	// Düşük kaliteli yansıma sahnelerinde vs. çizilecek kadar önemli mi?
 	private boolean isImportant = false;
+	
+	// Doku atlasındaki (Texture Atlas) hangi hücrenin kullanılacağı indeksi
+	private int textureIndex = 0;
+	
+	// Çarpışma kutusu
+	private physics.AABB boundingBox;
 	
 	/**
 	 * Yeni bir obje oluşturur.
@@ -73,7 +91,7 @@ public class Entity {
 	 * 
 	 * @param position Yeni x,y,z koordinatları
 	 */
-	public void setPosition(Vector3f position) {
+	public void setPosition(org.lwjgl.util.vector.Vector3f position) {
 		this.position.set(position);
 	}
 
@@ -105,10 +123,67 @@ public class Entity {
 		this.scale = scale;
 	}
 	
+	public physics.AABB getBoundingBox() {
+		return boundingBox;
+	}
+	
+	public void setBoundingBox(physics.AABB boundingBox) {
+		this.boundingBox = boundingBox;
+	}
+	
+	/** @return Frustum Culling için objenin kapsama yarıçapını döndürür */
+	public float getCullingRadius() {
+		return cullingRadius * scale;
+	}
+
+	/**
+	 * Frustum Culling için objenin kapsama yarıçapını ayarlar.
+	 * 
+	 * @param cullingRadius Yeni kapsama yarıçapı
+	 */
+	public void setCullingRadius(float cullingRadius) {
+		this.cullingRadius = cullingRadius;
+	}
+	
+	public void setLodModels(Model lod1, Model lod2) {
+		this.lod1Model = lod1;
+		this.lod2Model = lod2;
+	}
+
+	public void setLodDistances(float lod1Dist, float lod2Dist) {
+		this.lod1Distance = lod1Dist;
+		this.lod2Distance = lod2Dist;
+	}
+	
+	public void setLod2Distance(float lod2Distance) {
+		this.lod2Distance = lod2Distance;
+	}
+
+	public boolean isVisible() {
+		return visible;
+	}
+
+	public void setVisible(boolean visible) {
+		this.visible = visible;
+	}
+
+	public openglObjects.Query getOcclusionQuery() {
+		return occlusionQuery;
+	}
+
+	public void setOcclusionQuery(openglObjects.Query occlusionQuery) {
+		this.occlusionQuery = occlusionQuery;
+	}
+	
+	public Model getLod1Model() { return lod1Model; }
+	public Model getLod2Model() { return lod2Model; }
+	public float getLod1Distance() { return lod1Distance; }
+	public float getLod2Distance() { return lod2Distance; }
+
 	/** Objenin barındırdığı modeli ve dokuyu ekran kartından siler */
 	public void delete(){
-		model.delete();
-		skin.delete();
+		if (model != null) model.delete();
+		if (skin != null) skin.delete();
 	}
 
 	/**
@@ -176,4 +251,21 @@ public class Entity {
 		return physicsComponent != null;
 	}
 
+	public int getTextureIndex() {
+		return textureIndex;
+	}
+
+	public void setTextureIndex(int textureIndex) {
+		this.textureIndex = textureIndex;
+	}
+
+	public float getTextureXOffset() {
+		int column = textureIndex % skin.getNumberOfRows();
+		return (float) column / (float) skin.getNumberOfRows();
+	}
+
+	public float getTextureYOffset() {
+		int row = textureIndex / skin.getNumberOfRows();
+		return (float) row / (float) skin.getNumberOfRows();
+	}
 }

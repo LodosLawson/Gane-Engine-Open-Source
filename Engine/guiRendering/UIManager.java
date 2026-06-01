@@ -50,6 +50,16 @@ public class UIManager {
     private static final long MESSAGE_DURATION_MS = 4000;
     private long infoMessageTime = -1;
 
+    // FPS counter variables
+    private int fps = 0;
+    private int frameCount = 0;
+    private long lastFpsTime = 0;
+
+
+    // --- PUSULA ---
+    private String compassDirection = "N";
+    private float compassAngle = 0;
+
     /** Pencere pozisyonu ve boyutu */
     private int winX = 40, winY = 40, winW = 320, winH = 200;
 
@@ -105,6 +115,11 @@ public class UIManager {
     public void showMessage(String message) {
         this.infoMessage = message;
         this.infoMessageTime = System.currentTimeMillis();
+    }
+
+    public void setCompassDirection(float angle, String directionText) {
+        this.compassAngle = angle;
+        this.compassDirection = directionText;
     }
 
     // ─── Tema ────────────────────────────────────────────────────────────
@@ -189,6 +204,22 @@ public class UIManager {
      * 3D sahne renderından SONRA çağrılmalıdır.
      */
     public void render() {
+        render(0);
+    }
+
+    public void render(int shadowMapTextureId) {
+        // Calculate FPS
+        long currentTime = System.currentTimeMillis();
+        if (lastFpsTime == 0) {
+            lastFpsTime = currentTime;
+        }
+        frameCount++;
+        if (currentTime - lastFpsTime >= 1000) {
+            fps = frameCount;
+            frameCount = 0;
+            lastFpsTime = currentTime;
+        }
+
         renderer.beginUI();
 
         // 1. Pencere dış kenarlığı
@@ -227,10 +258,51 @@ public class UIManager {
                     theme.getPanelBackground());
             renderer.drawPanel(msgX - 22, msgY - 14, msgW + 44, 56,
                     theme.getPanelBorder());
-            renderer.drawPanel(msgX - 20, msgY - 12, msgW + 40, 52,
-                    theme.getPanelBackground());
-            renderer.drawText(infoMessage, msgX, msgY,
-                    theme.getMessageTextColor());
+            renderer.drawPanel(msgX - 22, msgY - 14, msgW + 44, 56,
+                    theme.getPanelBorder());
+            renderer.drawText(infoMessage, msgX, msgY, theme.getMessageTextColor());
+        }
+
+        // 8. Pusula / Yön Göstergesi
+        int compX = Display.getWidth() / 2 - 120;
+        int compY = 20;
+        renderer.drawPanel(compX, compY, 240, 40, theme.getPanelBackground());
+        renderer.drawPanel(compX - 2, compY - 2, 244, 44, theme.getPanelBorder());
+        
+        String compassText = String.format("Yon: %s [%.0f Derece]", compassDirection, compassAngle);
+        renderer.drawText(compassText, compX + 10, compY + 8, theme.getTitleTextColor());
+
+        // 8. FPS Sayacı (Sağ Üst Köşe)
+        String fpsText = "FPS: " + fps;
+        int panelW = 90;
+        int panelH = 30;
+        int fpsX = Display.getWidth() - panelW - 15;
+        int fpsY = 15;
+
+        // Dış kenarlık
+        renderer.drawPanel(fpsX - 1, fpsY - 1, panelW + 2, panelH + 2, theme.getPanelBorder());
+        // Arka plan
+        renderer.drawPanel(fpsX, fpsY, panelW, panelH, theme.getPanelBackground());
+        // Yazı
+        renderer.drawText(fpsText, fpsX + 12, fpsY + 3, theme.getTitleTextColor());
+
+        // 9. Gölge Haritası Hata Ayıklama Paneli (Sağ Alt Köşe)
+        if (shadowMapTextureId != 0) {
+            int w = 220;
+            int h = 220;
+            int x = Display.getWidth() - w - 15;
+            int y = Display.getHeight() - h - 15;
+            
+            // Dış kenarlık
+            renderer.drawPanel(x - 1, y - 1, w + 2, h + 2, theme.getPanelBorder());
+            // Arka plan
+            renderer.drawPanel(x, y, w, h, theme.getPanelBackground());
+            
+            // Gölge haritasını çiz
+            renderer.drawTexture(shadowMapTextureId, x + 5, y + 5, w - 10, h - 10);
+            
+            // Küçük etiket
+            renderer.drawText("Gunes Gorus", x + 10, y + h - 25, theme.getTitleTextColor());
         }
 
         renderer.endUI();
@@ -241,5 +313,9 @@ public class UIManager {
      */
     public void cleanup() {
         renderer.cleanup();
+    }
+    
+    public OpenglYaziCizimi getRenderer() {
+    	return renderer;
     }
 }

@@ -52,11 +52,13 @@ public class AudioManager {
         checkAndGenerate("Resources/audio/move.wav",   440, 0.05, 0.3f); // Hafif hareket tıkırtısı (tick)
         checkAndGenerate("Resources/audio/rotate.wav", 880, 0.1, 0.4f);  // Döndürme için "whoosh" benzeri tiz bir ses
         checkAndGenerate("Resources/audio/clear.wav",  660, 0.4, 0.6f);  // Satır silinme (clear) çınlaması
+        // Yaprak (leaf) sesi otomatik uretilmiyor (ugultu yapmamasi icin)
 
         loadSound("land",   "Resources/audio/land.wav",   false);
         loadSound("move",   "Resources/audio/move.wav",   false);
         loadSound("rotate", "Resources/audio/rotate.wav", false);
         loadSound("clear",  "Resources/audio/clear.wav",  false);
+        loadSound("leaf",   "Resources/audio/leaf.wav",   true);
         
         // Load BGM if exists (Varsa arka plan müziğini yükle)
         File bgmFile = new File("Resources/audio/bgm.wav");
@@ -85,8 +87,58 @@ public class AudioManager {
     public static void setGain(String key, float gain) {
         if (!initialized || !sources.containsKey(key)) return;
         int source = sources.get(key);
-        AL10.alSourcef(source, AL10.AL_GAIN, gain);
+        AL10.alSourcef(source, AL10.AL_GAIN, Math.max(0f, gain));
     }
+
+    /**
+     * Belirli bir ses kaynağının pitch (ton yüksekliği) değerini ayarlar.
+     * Rüzgar sesini şiddetine göre değiştirmek için kullanılır.
+     * @param key Ses anahtarı
+     * @param pitch Pitch değeri (1.0 = normal, > 1.0 = tiz, < 1.0 = pes)
+     */
+    public static void setPitch(String key, float pitch) {
+        if (!initialized || !sources.containsKey(key)) return;
+        int source = sources.get(key);
+        AL10.alSourcef(source, AL10.AL_PITCH, Math.max(0.1f, pitch));
+    }
+
+    /**
+     * OpenAL dinleyicisinin (kamera = oyuncu) 3D pozisyonunu günceller.
+     * Bu metot her frame çağrılarak sesin konuma göre doğal azalmasını sağlar.
+     * @param x Kamera X pozisyonu
+     * @param y Kamera Y pozisyonu
+     * @param z Kamera Z pozisyonu
+     */
+    public static void updateListenerPosition(float x, float y, float z) {
+        if (!initialized) return;
+        AL10.alListener3f(AL10.AL_POSITION, x, y, z);
+    }
+
+    /**
+     * Bir ses kaynağının 3D dünya pozisyonunu günceller.
+     * Okyanus sesini su seviyesine/kıyıya sabitlemek için kullanılır.
+     * @param key Ses anahtarı
+     * @param x X dünya pozisyonu
+     * @param y Y dünya pozisyonu
+     * @param z Z dünya pozisyonu
+     */
+    public static void setSourcePosition(String key, float x, float y, float z) {
+        if (!initialized || !sources.containsKey(key)) return;
+        int source = sources.get(key);
+        AL10.alSource3f(source, AL10.AL_POSITION, x, y, z);
+    }
+
+    /**
+     * Bir ses kaynağının 3D sönümleme (attenuation) ayarlarını yapar.
+     */
+    public static void setSource3DAttributes(String key, float refDist, float maxDist, float rolloff) {
+        if (!initialized || !sources.containsKey(key)) return;
+        int source = sources.get(key);
+        AL10.alSourcef(source, AL10.AL_REFERENCE_DISTANCE, refDist);
+        AL10.alSourcef(source, AL10.AL_MAX_DISTANCE, maxDist);
+        AL10.alSourcef(source, AL10.AL_ROLLOFF_FACTOR, rolloff);
+    }
+
 
     /**
      * İlgili dizinde ses dosyası yoksa otomatik olarak Sine Wave (Sinüs Dalgası) üreterek kaydeder.
@@ -150,6 +202,18 @@ public class AudioManager {
             // (Sesin üst üste seri bir şekilde çalınabilmesi için önce durduruyoruz)
             AL10.alSourceStop(source);
             AL10.alSourcePlay(source);
+        }
+    }
+
+    /**
+     * Çalmakta olan bir ses efektini (SFX) durdurur.
+     * @param key Durdurulacak sesin anahtarı
+     */
+    public static void stopSFX(String key) {
+        if (!initialized) return;
+        if (sources.containsKey(key)) {
+            int source = sources.get(key);
+            AL10.alSourceStop(source);
         }
     }
 

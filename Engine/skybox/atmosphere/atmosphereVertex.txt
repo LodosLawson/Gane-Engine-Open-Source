@@ -1,0 +1,44 @@
+#version 150
+
+in vec3 in_position;
+in vec4 modelMatrixCol0;
+in vec4 modelMatrixCol1;
+in vec4 modelMatrixCol2;
+in vec4 modelMatrixCol3;
+in vec2 cloudProperties; // x = alpha, y = density
+
+// Objenin dünya uzayındaki (World Space) pozisyonunu fragment'a aktarırız
+out vec3 pass_worldPosition; 
+out vec3 pass_localPosition;
+out float pass_cloudAlpha;
+out float pass_cloudDensity;
+
+uniform mat4 projectionViewMatrix;
+uniform mat4 modelMatrix;
+uniform float isSun;
+
+void main(void){
+	vec4 worldPos;
+	
+	if (abs(isSun - 2.0) < 0.1) { // Bulut (isSun == 2.0)
+		mat4 instancedModelMatrix = mat4(modelMatrixCol0, modelMatrixCol1, modelMatrixCol2, modelMatrixCol3);
+		worldPos = instancedModelMatrix * vec4(in_position, 1.0);
+		pass_cloudAlpha = cloudProperties.x;
+		pass_cloudDensity = cloudProperties.y;
+	} else { // Gezegen, Güneş, Atmosfer vb.
+		worldPos = modelMatrix * vec4(in_position, 1.0);
+		pass_cloudAlpha = 1.0;
+		pass_cloudDensity = 0.0;
+	}
+	
+	gl_Position = projectionViewMatrix * worldPos;
+	
+	// Bulutlar (isSun = 2.0) haricindeki tum gokyuzu elemanlarini (Yildizlar, Gunes, Atmosfer) 
+	// uzak kirpma duzlemine (depth = 1.0) sabitle. Boylece asla kirpilmazlar ve en arkada kalirlar.
+	if (abs(isSun - 2.0) > 0.1) {
+		gl_Position = gl_Position.xyww;
+	}
+	
+	pass_worldPosition = worldPos.xyz;
+	pass_localPosition = in_position;
+}

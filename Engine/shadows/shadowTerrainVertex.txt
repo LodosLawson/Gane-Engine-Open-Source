@@ -1,0 +1,66 @@
+#version 150
+
+in vec3 inPosition;
+
+uniform mat4 projectionViewMatrix;
+uniform mat4 modelMatrix;
+
+// Infinite Terrain Uniforms
+uniform float uMaxHeight;
+uniform float uRoughness;
+uniform int uOctaves;
+uniform float uScale;
+uniform float uOffsetX;
+	uniform float uOffsetZ;
+	uniform float uBaseHeight;
+	uniform float uInfinite;
+	
+	float hash(vec2 p) {
+    int ix = int(p.x);
+    int iz = int(p.y);
+    ix = ix % 100000;
+    iz = iz % 100000;
+    if (ix < 0) ix += 100000;
+    if (iz < 0) iz += 100000;
+    int n = ix + iz * 57;
+    n = (n << 13) ^ n;
+    int nn = (n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff;
+    return 1.0 - (float(nn) / 1073741824.0);
+}
+
+float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    float a = hash(i + vec2(0.0, 0.0));
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+float fbm(vec2 p) {
+    float total = 0.0;
+    float amplitude = 1.0;
+    float maxValue = 0.0;
+    for (int i = 0; i < uOctaves; i++) {
+        total += noise(p) * amplitude;
+        maxValue += amplitude;
+        p *= 2.0;
+        amplitude *= uRoughness;
+    }
+    return total / maxValue;
+}
+
+void main(void) {
+    vec4 worldPos = modelMatrix * vec4(inPosition, 1.0);
+    
+    if (uInfinite > 0.5) {
+        // Apply the same displacement as in the terrain shader
+        vec2 noisePos = vec2(worldPos.x / uScale + uOffsetX, worldPos.z / uScale + uOffsetZ);
+        float h = fbm(noisePos) * uMaxHeight;
+        worldPos.y = h + uBaseHeight;
+    }
+    
+    gl_Position = projectionViewMatrix * worldPos;
+}

@@ -1,0 +1,32 @@
+# Blender 5.1.1 MTL File: 'birch_tree.blend'
+# www.blender.org
+
+newmtl Tree.Birch.Bark.Mat
+Kd 0.458824 0.458824 0.458824
+Ks 0.200000 0.200000 0.200000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Pr 0.500000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+
+newmtl Tree.Birch.Leaf.Summer.Mat
+Kd 0.208335 0.359993 0.139720
+Ks 0.200000 0.200000 0.200000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Pr 0.500000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000

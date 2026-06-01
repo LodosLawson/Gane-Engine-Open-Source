@@ -98,8 +98,18 @@ public class ShaderProgram {
 			e.printStackTrace();
 			System.exit(-1);
 		}
+		String source = shaderSource.toString();
+		if (source.contains("DISP_MAP_SIZE") || source.contains("BLEND_START")) {
+			String defines = "#version 430\n" +
+			                 "#define DISP_MAP_SIZE 256\n" +
+			                 "#define LOG2_DISP_MAP_SIZE 8\n" +
+			                 "#define TILE_SIZE_X2 0.15625\n" +
+			                 "#define INV_TILE_SIZE 12.8\n";
+			source = source.replaceFirst("#version 430", defines);
+		}
+		
 		int shaderID = GL20.glCreateShader(type);
-		GL20.glShaderSource(shaderID, shaderSource);
+		GL20.glShaderSource(shaderID, source);
 		GL20.glCompileShader(shaderID);
 		if (GL20.glGetShaderi(shaderID, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
 			System.out.println(GL20.glGetShaderInfoLog(shaderID, 500));

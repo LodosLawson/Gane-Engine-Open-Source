@@ -1,19 +1,19 @@
 package loaders;
 
-import skybox.Skybox;
+import skybox.classic.Skybox;
 import textures.Texture;
 import utils.MyFile;
 
 /**
- * Gökyüzü küpünü (Skybox) yüklemekten sorumlu sınıf.
+ * GÃ¶kyÃ¼zÃ¼ kÃ¼pÃ¼nÃ¼ (Skybox) yÃ¼klemekten sorumlu sÄ±nÄ±f.
  */
 public class SkyboxLoader {
 
 	/**
-	 * Belirtilen klasördeki 6 gökyüzü dokusunu okuyup yeni bir Skybox nesnesi oluşturur.
+	 * Belirtilen klasÃ¶rdeki 6 gÃ¶kyÃ¼zÃ¼ dokusunu okuyup yeni bir Skybox nesnesi oluÅŸturur.
 	 * 
-	 * @param skyboxFolder Gökyüzü dokularının bulunduğu klasör
-	 * @return Yüklenen Skybox
+	 * @param skyboxFolder GÃ¶kyÃ¼zÃ¼ dokularÄ±nÄ±n bulunduÄŸu klasÃ¶r
+	 * @return YÃ¼klenen Skybox
 	 */
 	protected Skybox loadSkyBox(MyFile skyboxFolder) {
 		MyFile[] textureFiles = getSkyboxTexFiles(skyboxFolder);
@@ -22,11 +22,11 @@ public class SkyboxLoader {
 	}
 
 	/**
-	 * Belirtilen klasör içerisindeki Skybox yüzey kaplamalarının MyFile array halini döndürür.
-	 * Dosya isimleri LoaderSettings sınıfından alınır.
+	 * Belirtilen klasÃ¶r iÃ§erisindeki Skybox yÃ¼zey kaplamalarÄ±nÄ±n MyFile array halini dÃ¶ndÃ¼rÃ¼r.
+	 * Dosya isimleri LoaderSettings sÄ±nÄ±fÄ±ndan alÄ±nÄ±r.
 	 * 
-	 * @param skyboxFolder Gökyüzü dokularının bulunduğu klasör
-	 * @return Dosyaların listesi
+	 * @param skyboxFolder GÃ¶kyÃ¼zÃ¼ dokularÄ±nÄ±n bulunduÄŸu klasÃ¶r
+	 * @return DosyalarÄ±n listesi
 	 */
 	private MyFile[] getSkyboxTexFiles(MyFile skyboxFolder) {
 		MyFile[] files = new MyFile[LoaderSettings.SKYBOX_TEX_FILES.length];
@@ -37,3 +37,4 @@ public class SkyboxLoader {
 	}
 
 }
+

@@ -12,7 +12,7 @@ public class TextureBuilder {
 	// Dokunun kenarlarını son piksellerle mi uzatacağını belirler (Clamp to Edge)
 	private boolean clampEdges = false;
 	// Mipmapping (Uzaklaştıkça daha düşük çözünürlüklü doku kullanma) aktif mi?
-	private boolean mipmap = false;
+	private boolean mipmap = true;
 	// Anisotropic filtreleme aktif mi? (Açılı bakışlarda doku kalitesini arttırır)
 	private boolean anisotropic = true;
 	// En yakın komşu (Nearest) filtreleme mi kullanılacak? (Piksel art stili için)

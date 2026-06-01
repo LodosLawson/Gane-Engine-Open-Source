@@ -60,6 +60,12 @@ public class Vao {
 			GL20.glEnableVertexAttribArray(i);
 		}
 	}
+	
+	public void bindIndexBuffer() {
+		if (indexVbo != null) {
+			indexVbo.bind();
+		}
+	}
 
 	/** VAO'yu pasif hale getirir (bağlantısını çözer). */
 	public void unbind() {
@@ -98,8 +104,8 @@ public class Vao {
 	 */
 	public void delete() {
 		GL30.glDeleteVertexArrays(id);
-		dataVbo.delete();
-		indexVbo.delete();
+		if (dataVbo != null) dataVbo.delete();
+		if (indexVbo != null) indexVbo.delete();
 	}
 
 	/**
@@ -200,6 +206,16 @@ public class Vao {
 			}
 		}
 		return interleavedBuffer;
+	}
+
+	/** Instanced Rendering için (Matrix gibi) her instance başına güncellenen VBO ekler */
+	public void addInstancedAttribute(int vaoId, int vboId, int attribute, int dataSize, int instancedDataLength, int offset) {
+		GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vboId);
+		GL30.glBindVertexArray(vaoId);
+		GL20.glVertexAttribPointer(attribute, dataSize, GL11.GL_FLOAT, false, instancedDataLength * 4, offset * 4);
+		org.lwjgl.opengl.GL33.glVertexAttribDivisor(attribute, 1);
+		GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+		GL30.glBindVertexArray(0);
 	}
 
 }

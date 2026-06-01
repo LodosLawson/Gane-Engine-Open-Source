@@ -86,7 +86,8 @@ public class MyFile {
 	 * @return Dosya veri akışı (InputStream)
 	 */
 	public InputStream getInputStream() {
-		InputStream in = MyFile.class.getResourceAsStream(path);
+		String cpPath = path.startsWith(FILE_SEPARATOR) ? path.replace(FILE_SEPARATOR, "/") : "/" + path.replace(FILE_SEPARATOR, "/");
+		InputStream in = MyFile.class.getResourceAsStream(cpPath);
 		if (in != null) {
 			// Classpath'te bulunduysa döndür
 			return in;

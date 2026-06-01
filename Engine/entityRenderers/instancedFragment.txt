@@ -1,0 +1,240 @@
+#version 330
+
+// Vertex shader'dan gelen texture (kaplama) koordinatları.
+in vec2 pass_textureCoords;
+// Vertex shader'dan gelen parlaklık değeri (ışık hesaplamasından sonra).
+in float pass_brightness;
+// Vertex shader'dan gelen nesne xz düzlemi konumu.
+in vec2 pass_pos;
+in float pass_distanceToCamera;
+
+// Nokta/Spot Işık (Point Light) için değişkenler
+in vec3 pass_worldPos;
+in vec3 pass_normal;
+
+// Ekrana basılacak son piksel rengi.
+out vec4 out_colour;
+
+// Ana kaplama (texture) resmi.
+uniform sampler2D diffuseMap;
+// Ekstra kaplama resmi (örneğin parlama/glow haritası).
+uniform sampler2D extraMap;
+uniform sampler2D shadowMap;
+
+in vec4 pass_shadowCoords;
+
+// Ekstra haritanın kullanılıp kullanılmayacağını belirten değişken.
+uniform float hasExtraMap;
+uniform float useFakeLighting;
+
+// Ana Güneş Işığı Rengi ve Yönü
+uniform vec3 lightColor;
+uniform vec3 lightDirection;
+uniform float lightBrightness;
+uniform float ambientLight;
+
+// Kameranın dünya pozisyonu
+uniform vec3 cameraPosition;
+
+uniform vec3 pointLightPos;
+uniform vec3 pointLightColor;
+uniform vec3 pointLightAttenuation; // x=sabit, y=doğrusal, z=kare formülü çarpanları
+
+// Cloud Shadow Uniforms
+uniform float uTime;
+uniform vec2  uWindDir;
+uniform float uCloudShadowEnabled;
+uniform vec4  uCloudShadowPos[32];
+uniform float uCloudShadowAlpha[32];
+uniform int   uNumCloudShadows;
+
+// --- SIMPLE PROCEDURAL NOISE ---
+float hash(vec2 p) {
+    p  = fract(p * vec2(5.3983, 5.4427));
+    p += dot(p.yx, p.xy + vec2(21.5351, 14.3137));
+    return fract(p.x * p.y * 95.4337);
+}
+
+float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f*f*(3.0-2.0*f);
+    return mix(mix(hash(i + vec2(0.0,0.0)), hash(i + vec2(1.0,0.0)), u.x),
+               mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), u.x), u.y);
+}
+
+float fbm(vec2 p) {
+    float f = 0.0;
+    f += 0.5000 * noise(p); p = p * 2.0;
+    f += 0.2500 * noise(p); p = p * 2.0;
+    f += 0.1250 * noise(p); p = p * 2.0;
+    f += 0.0625 * noise(p);
+    return f;
+}
+
+// Özel bir yumuşatma geçiş fonksiyonu. GLSL'nin kendi smoothstep fonksiyonuna alternatif olarak yazılmıştır.
+float smoothlyStep(float edge0, float edge1, float x){
+    float t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+    return t * t * (3.0 - 2.0 * t);
+}
+
+// Shader'ın ana fonksiyonu. Her bir piksel için çalışır.
+void main(void){
+	
+	// Kaplama resminden alınan temel renk.
+	vec4 diffuseColour = texture(diffuseMap, pass_textureCoords);
+	
+	// Eğer pikselin görünmezlik (alpha) değeri çok düşükse, pikseli çizme. (Örn: Yaprak kenarları)
+	if(diffuseColour.a < 0.5){
+		discard;
+	}
+	
+	// Normalleri normalize et
+	vec3 unitNormal = pass_normal;
+	if (length(unitNormal) > 0.01) {
+		unitNormal = normalize(unitNormal);
+	} else {
+		unitNormal = vec3(0.0, 1.0, 0.0);
+	}
+	vec3 unitLightDirection = normalize(-lightDirection);
+	
+	// Yönlü Işık (Diffuse)
+	float diffuseFactor = max(dot(unitNormal, unitLightDirection), 0.0);
+	
+	// --- GLOBAL SHADOW MAPPING ---
+	float shadowFactor = 1.0;
+	vec3 projCoords = pass_shadowCoords.xyz / pass_shadowCoords.w;
+	if (projCoords.x >= 0.0 && projCoords.x <= 1.0 && 
+		projCoords.y >= 0.0 && projCoords.y <= 1.0 &&
+		projCoords.z >= 0.0 && projCoords.z <= 1.0) {
+		float shadowMapSize = 2048.0;
+		float texelSize = 1.0 / shadowMapSize;
+		float currentDepth = projCoords.z;
+		float bias = max(0.005 * (1.0 - dot(unitNormal, unitLightDirection)), 0.001);
+		
+		if (useFakeLighting > 0.5) {
+			// OPTIMIZATION: 1-tap shadow for grass (saves 8 texture lookups per pixel!)
+			float pcfDepth = texture(shadowMap, projCoords.xy).r;
+			shadowFactor = currentDepth - bias > pcfDepth ? 0.2 : 1.0;
+		} else {
+			// 9-tap PCF for trees and standard instanced objects
+			float total = 0.0;
+			int pcfCount = 0;
+			
+			for (int x = -1; x <= 1; x++) {
+				for (int y = -1; y <= 1; y++) {
+					float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
+					total += currentDepth - bias > pcfDepth ? 0.2 : 1.0;
+					pcfCount++;
+				}
+			}
+			shadowFactor = total / float(pcfCount);
+		}
+	}
+	
+	// --- CLOUD SHADOWS ---
+	float cloudShadow = 1.0;
+	if (uCloudShadowEnabled > 0.5) {
+		vec3 D = normalize(-lightDirection);
+		float shadowAccum = 0.0;
+		for (int i = 0; i < uNumCloudShadows; i++) {
+			vec3 C = uCloudShadowPos[i].xyz;
+			float R = uCloudShadowPos[i].w;
+			float alpha = uCloudShadowAlpha[i];
+			if (R > 0.0 && alpha > 0.01) {
+				vec3 toCloud = C - pass_worldPos;
+				float t = dot(toCloud, D);
+				if (t > 0.0) {
+					float distSq = dot(toCloud, toCloud) - t * t;
+					float rSq = R * R;
+					if (distSq < rSq) {
+						float dist = sqrt(distSq);
+						vec3 intersect = pass_worldPos + D * t;
+						vec3 relPos = intersect - C;
+						vec2 noiseUV = relPos.xz * (1.0 / R) * 3.0 + vec2(uTime * 0.015);
+						
+						// OPTIMIZATION: Use single noise instead of fbm for flora! FPS saver!
+						float n = noise(noiseUV);
+						
+						float perturbedDist = dist + (n - 0.5) * 0.35 * R;
+						float edgeFactor = clamp(1.0 - (perturbedDist / R), 0.0, 1.0);
+						float edgeSoftness = edgeFactor * edgeFactor * edgeFactor;
+						float shadowDensity = edgeSoftness * alpha;
+						
+						shadowAccum = clamp(shadowAccum + shadowDensity * 0.7, 0.0, 1.0);
+						
+						// OPTIMIZATION: Early exit
+						if (shadowAccum >= 1.0) break;
+					}
+				}
+			}
+		}
+		cloudShadow = mix(1.0, 0.05, clamp(shadowAccum, 0.0, 1.0));
+	}
+
+	float finalShadow = min(cloudShadow, shadowFactor);
+	
+	vec3 diffuseLight = diffuseFactor * lightBrightness * lightColor * finalShadow;
+	
+	// Hemispherical Ambient Lighting (Mavi gökyüzü vs. toprak yansıması)
+	// Işık rengi gece azalsa dahi gökyüzünün starlight rengi nesneleri aydınlatmaya devam eder.
+	vec3 skyAmbient = vec3(0.5, 0.65, 0.8) * ambientLight;
+	vec3 groundAmbient = vec3(0.2, 0.18, 0.15) * ambientLight;
+	float hemiMix = unitNormal.y * 0.5 + 0.5;
+	vec3 ambient = mix(groundAmbient, skyAmbient, hemiMix);
+	
+	vec3 totalDiffuse = diffuseLight + ambient;
+	vec4 sunLightColour = vec4(diffuseColour.rgb * totalDiffuse, diffuseColour.a);
+	
+	vec3 totalSpecular = vec3(0.0);
+	vec3 pointLightIllumination = vec3(0.0);
+	
+	// Uzaktaki objelerin kalitesini düşür (LOD/Shader basitleştirme)
+	if (pass_distanceToCamera < 150.0) {
+		// Varsayılan speküler (parlama) ayarları
+		float shineDamper = 32.0;
+		float reflectivity = 0.4;
+		
+		// Eğer ekstra pürüzlülük/parlaklık haritası varsa, değerleri her piksel için dinamik oku
+		if(hasExtraMap > 0.5){
+			float roughness = texture(extraMap, pass_textureCoords).r;
+			shineDamper = mix(128.0, 4.0, roughness);
+			reflectivity = mix(0.8, 0.05, roughness);
+		}
+		
+		// Nokta Işık / Spot Işık (Point Light) Hesaplaması (Sadece Diffuse)
+		vec3 toLightVector = pointLightPos - pass_worldPos;
+		float distanceToLight = length(toLightVector);
+		vec3 unitLightVector = normalize(toLightVector);
+		
+		float nDotl = max(dot(unitNormal, unitLightVector), 0.0);
+		float attFactor = pointLightAttenuation.x + (pointLightAttenuation.y * distanceToLight) + (pointLightAttenuation.z * distanceToLight * distanceToLight);
+		pointLightIllumination = (pointLightColor * nDotl) / attFactor;
+		
+		if (useFakeLighting > 0.5) {
+			reflectivity = 0.0;
+		} else {
+			// Speküler (Dinamik Parlaklık) Yansıma Hesaplaması (Blinn-Phong)
+			// OPTIMIZATION: Only run expensive specular math for trees/objects that actually reflect light.
+			vec3 viewVector = normalize(cameraPosition - pass_worldPos);
+			
+			// 1. Güneş Işığı için Speküler Yansıma
+			vec3 sunHalfwayVector = normalize(unitLightDirection + viewVector);
+			float sunSpecularFactor = max(dot(unitNormal, sunHalfwayVector), 0.0);
+			float sunSpecular = pow(sunSpecularFactor, shineDamper); 
+			vec3 sunSpecularLight = sunSpecular * reflectivity * lightColor * finalShadow; 
+		 
+			// 2. Nokta Işığı için Speküler Yansıma
+			vec3 pointHalfwayVector = normalize(unitLightVector + viewVector);
+			float pointSpecularFactor = max(dot(unitNormal, pointHalfwayVector), 0.0);
+			float pointSpecular = pow(pointSpecularFactor, shineDamper);
+			vec3 pointSpecularLight = (pointSpecular * reflectivity * pointLightColor) / attFactor;
+			
+			totalSpecular = sunSpecularLight + pointSpecularLight;
+		}
+	}
+	
+	// Sonuç = Güneş Işığı + Nokta Işığı + Speküler Parlamalar
+	out_colour = sunLightColour + vec4(pointLightIllumination * diffuseColour.rgb, 0.0) + vec4(totalSpecular, 0.0);
+	
+}

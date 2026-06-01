@@ -17,6 +17,15 @@ public class Skin {
 	// Bu kaplamanın saydam/yarı saydam pikseller içerip içermediği
 	private boolean transparent;
 	
+	// Objeye sahte ışıklandırma uygulanıp uygulanmayacağı (Örn: Çimenlerin normalini yukarı sabitleme)
+	private boolean useFakeLighting = false;
+	
+	// Arka yüz gizleme (back-face culling) aktif mi? Varsayılan olarak aktiftir.
+	private boolean cullBackFaces = true;
+	
+	// Doku atlasındaki (Texture Atlas) satır/sütun sayısı (Varsayılan 1)
+	private int numberOfRows = 1;
+	
 	/**
 	 * Yeni bir materyal (Skin) oluşturur.
 	 * 
@@ -28,9 +37,7 @@ public class Skin {
 		this.extraInfoMap = extraInfoMap;
 	}
 	
-	/**
-	 * Bu kaplamaya ait tüm doku dosyalarını ekran kartı belleğinden siler.
-	 */
+	/** Kaplamanın tüm doku dosyalarını ekran kartı belleğinden siler. */
 	public void delete(){
 		diffuseTexture.delete();
 		if(extraInfoMap!=null){
@@ -41,6 +48,26 @@ public class Skin {
 	/** Kaplamanın transparan (saydam) olup olmadığını ayarlar */
 	public void setTransparent(boolean transparent){
 		this.transparent = transparent;
+	}
+	
+	/** Arka yüz gizlemeyi (Back-face culling) ayarlar */
+	public void setCullBackFaces(boolean cullBackFaces) {
+		this.cullBackFaces = cullBackFaces;
+	}
+	
+	/** @return Arka yüz gizleme aktif mi? */
+	public boolean isCullBackFaces() {
+		return cullBackFaces;
+	}
+	
+	/** Objeye sahte ışıklandırma uygulanmasını ayarlar */
+	public void setUseFakeLighting(boolean useFakeLighting) {
+		this.useFakeLighting = useFakeLighting;
+	}
+	
+	/** @return Objeye sahte ışık uygulanıyor mu? */
+	public boolean isUseFakeLighting() {
+		return useFakeLighting;
 	}
 	
 	/** @return Kaplama saydam pikseller içeriyor mu? (Örn. Yaprak, Cam) */
@@ -62,5 +89,17 @@ public class Skin {
 	public Texture getExtraInfoMap(){
 		return extraInfoMap;
 	}
-	
+
+	/** @return Doku atlasındaki satır sayısını döndürür */
+	public int getNumberOfRows() {
+		return numberOfRows;
+	}
+
+	/**
+	 * Doku atlasındaki satır/sütun sayısını ayarlar.
+	 * Örneğin 4x4 bir atlas için 4 girilmelidir.
+	 */
+	public void setNumberOfRows(int numberOfRows) {
+		this.numberOfRows = numberOfRows;
+	}
 }

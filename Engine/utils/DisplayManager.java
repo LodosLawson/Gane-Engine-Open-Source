@@ -9,11 +9,12 @@ import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.PixelFormat;
 
 /**
- * Oyunun ana penceresinin (Display) oluşturulmasını, güncellenmesini ve kapatılmasını sağlayan yönetici sınıf.
+ * Oyunun ana penceresinin (Display) oluşturulmasını, güncellenmesini ve
+ * kapatılmasını sağlayan yönetici sınıf.
  * Ayrıca oyun döngüsü için geçen süreyi (Delta Time) hesaplar.
  */
 public class DisplayManager {
-	
+
 	// Pencere başlığı
 	private static final String TITLE = "Socuwan Scene";
 	// Pencere genişliği
@@ -21,20 +22,20 @@ public class DisplayManager {
 	// Pencere yüksekliği
 	private static final int HEIGHT = 720;
 	// Hedeflenen maksimum saniye başına kare sayısı (FPS)
-	private static final int FPS_CAP = 100;
-	
+	private static final int FPS_CAP = 250;
+
 	// Bir önceki karenin çizildiği zaman (Milisaniye)
 	private static long lastFrameTime;
 	// İki kare arasında geçen süre (Delta Time - Saniye cinsinden)
 	private static float delta;
-	
+
 	/**
 	 * OpenGL penceresini belirtilen özelliklerde oluşturur.
 	 * Antialiasing (Multisample) ve varsayılan viewport ayarlarını yapar.
 	 * 
 	 * @return Yeni bir DisplayManager nesnesi
 	 */
-	public static DisplayManager createDisplay(){
+	public static DisplayManager createDisplay() {
 		try {
 			int width = gane.AppSettings.width;
 			int height = gane.AppSettings.height;
@@ -49,11 +50,11 @@ public class DisplayManager {
 				Display.setDisplayMode(new DisplayMode(width, height));
 				Display.setFullscreen(false);
 			}
-			
-			// Depth buffer bit derinliği 24 ve Antialiasing (Multisample) seviyesi 4 olarak ayarlanır
+
+			// Depth buffer bit derinliği 24 ve Antialiasing (Multisample) seviyesi 4 olarak
+			// ayarlanır
 			Display.create(new PixelFormat().withDepthBits(24).withSamples(4));
 			Display.setTitle(title);
-			
 			// Eğer geliştirici özel bir logo/ikon yolu belirttiyse yükle
 			if (logoPath != null && !logoPath.isEmpty()) {
 				setWindowIcon(logoPath);
@@ -65,14 +66,15 @@ public class DisplayManager {
 			e.printStackTrace();
 			System.err.println("Couldn't create display!");
 			System.exit(-1);
-		}	
+		}
 		// Çizim alanının boyutları pencere boyutuyla aynı yapılır
 		GL11.glViewport(0, 0, Display.getWidth(), Display.getHeight());
 		return new DisplayManager();
 	}
 
 	/**
-	 * Geliştiricinin verdiği logo dosyasını dinamik olarak 16x16 ve 32x32 boyutlarına 
+	 * Geliştiricinin verdiği logo dosyasını dinamik olarak 16x16 ve 32x32
+	 * boyutlarına
 	 * ölçeklendirerek pencere ikonu (Window Icon) olarak atar.
 	 */
 	private static void setWindowIcon(String path) {
@@ -93,7 +95,8 @@ public class DisplayManager {
 	}
 
 	private static java.nio.ByteBuffer getIconBuffer(java.awt.image.BufferedImage img, int w, int h) {
-		java.awt.image.BufferedImage scaledImg = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+		java.awt.image.BufferedImage scaledImg = new java.awt.image.BufferedImage(w, h,
+				java.awt.image.BufferedImage.TYPE_INT_ARGB);
 		java.awt.Graphics2D g = scaledImg.createGraphics();
 		g.drawImage(img, 0, 0, w, h, null);
 		g.dispose();
@@ -105,58 +108,59 @@ public class DisplayManager {
 			for (int x = 0; x < w; x++) {
 				int pixel = pixels[y * w + x];
 				buf.put((byte) ((pixel >> 16) & 0xFF)); // R
-				buf.put((byte) ((pixel >> 8) & 0xFF));  // G
-				buf.put((byte) (pixel & 0xFF));         // B
+				buf.put((byte) ((pixel >> 8) & 0xFF)); // G
+				buf.put((byte) (pixel & 0xFF)); // B
 				buf.put((byte) ((pixel >> 24) & 0xFF)); // A
 			}
 		}
 		buf.flip();
 		return buf;
 	}
-	
+
 	/**
-	 * Private kurucu metot, sadece içeriden (createDisplay metodu ile) çağrılabilir.
+	 * Private kurucu metot, sadece içeriden (createDisplay metodu ile)
+	 * çağrılabilir.
 	 * Başlangıç zamanını kaydeder.
 	 */
-	private DisplayManager(){		
+	private DisplayManager() {
 		lastFrameTime = getCurrentTime();
 	}
-	
+
 	/**
 	 * Her karede (frame) çağrılarak pencereyi günceller, FPS'yi sınırlar
 	 * ve iki kare arasında geçen zamanı (Delta Time) hesaplar.
 	 */
-	public void update(){
+	public void update() {
 		// FPS sabitleme
 		Display.sync(FPS_CAP);
 		// Çizilenleri ekrana yansıt (Swap buffers)
 		Display.update();
-		
+
 		// Geçen süreyi hesapla
 		long currentFrameTime = getCurrentTime();
-		delta = (currentFrameTime - lastFrameTime)/1000f; // Saniyeye çeviriyoruz
+		delta = (currentFrameTime - lastFrameTime) / 1000f; // Saniyeye çeviriyoruz
 		lastFrameTime = currentFrameTime;
 	}
-	
+
 	/**
 	 * @return İki kare arasında geçen süre (Saniye)
 	 */
-	public float getFrameTime(){
+	public float getFrameTime() {
 		return delta;
 	}
-	
+
 	/**
 	 * Pencereyi kapatır ve ayrılan kaynakları temizler.
 	 */
-	public void closeDisplay(){
+	public void closeDisplay() {
 		Display.destroy();
 	}
-	
+
 	/**
 	 * @return Sistemin anlık zamanını milisaniye cinsinden döndürür
 	 */
-	private long getCurrentTime(){
-		return Sys.getTime()*1000/Sys.getTimerResolution();
+	private long getCurrentTime() {
+		return Sys.getTime() * 1000 / Sys.getTimerResolution();
 	}
-	
+
 }

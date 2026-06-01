@@ -104,6 +104,7 @@ public class TextureUtils {
 				
 				// Yeni bir stream aç
 				InputStream in2 = file.getInputStream();
+				javax.imageio.ImageIO.setUseCache(false); // Diskte yer kalmadığında çökmeyi önlemek için cache'i kapat
 				java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(in2);
 				in2.close();
 				
@@ -161,7 +162,7 @@ public class TextureUtils {
 			GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR_MIPMAP_LINEAR);
 			// Ekran kartı Anisotropic filtrelemeyi destekliyor mu kontrol et
 			if (builder.isAnisotropic() && GLContext.getCapabilities().GL_EXT_texture_filter_anisotropic) {
-				GL11.glTexParameterf(GL11.GL_TEXTURE_2D, GL14.GL_TEXTURE_LOD_BIAS, 0);
+				GL11.glTexParameterf(GL11.GL_TEXTURE_2D, GL14.GL_TEXTURE_LOD_BIAS, -0.4f);
 				// Maksimum anisotropik kaliteyi (Örn: 4x) belirle
 				GL11.glTexParameterf(GL11.GL_TEXTURE_2D, EXTTextureFilterAnisotropic.GL_TEXTURE_MAX_ANISOTROPY_EXT,
 						4.0f);

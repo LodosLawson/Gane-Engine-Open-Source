@@ -15,9 +15,11 @@
 	<classpathentry kind="lib" path="lwjgl-2.9.3/jar/lwjgl.jar"/>
 	<classpathentry kind="lib" path="lib/pngdecoder.jar"/>
 	<classpathentry kind="lib" path="lib/steamworks4j.jar"/>
+	<classpathentry kind="lib" path="lib/json.jar"/>
 	<classpathentry kind="lib" path="lwjgl-2.9.3/jar/lwjgl-debug.jar"/>
 	<classpathentry kind="lib" path="lwjgl-2.9.3/jar/lzma.jar"/>
 	<classpathentry kind="lib" path="lwjgl-2.9.3/jar/substance-7.2.1.jar"/>
 	<classpathentry kind="lib" path="lwjgl-2.9.3/jar/trident-7.2.1.jar"/>
+	<classpathentry excluding="src/|Engine/" kind="src" path=""/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -61,6 +61,13 @@ public class Texture {
 	}
 
 	/**
+	 * Zaten olusturulmus bir OpenGL doku kimliginden Texture nesnesi yaratir.
+	 */
+	public static Texture createFromId(int id, int size) {
+		return new Texture(id, size);
+	}
+
+	/**
 	 * Yeni bir doku yüklemek için Builder (Yapıcı) sınıfını döndürür.
 	 * 
 	 * @param textureFile Yüklenecek doku dosyası

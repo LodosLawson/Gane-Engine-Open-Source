@@ -7,13 +7,13 @@ import extra.Camera;
 import gane.WorldSettings; 
 import scene.Entity;
 import scene.Scene;
-import skybox.Skybox;
+import skybox.classic.Skybox;
 import utils.ICamera;
 import utils.MyFile;
 
 /**
- * Oyun sahnesini (Scene) dışarıdan yüklemekle sorumlu sınıf.
- * Sahnedeki modelleri, araziyi, parlak objeleri ve gökyüzünü oluşturarak geri döndürür.
+ * Oyun sahnesini (Scene) dÄ±ÅŸarÄ±dan yÃ¼klemekle sorumlu sÄ±nÄ±f.
+ * Sahnedeki modelleri, araziyi, parlak objeleri ve gÃ¶kyÃ¼zÃ¼nÃ¼ oluÅŸturarak geri dÃ¶ndÃ¼rÃ¼r.
  */
 public class SceneLoader {
 
@@ -21,10 +21,10 @@ public class SceneLoader {
 	private SkyboxLoader skyLoader;
 
 	/**
-	 * SceneLoader'ı ilklendirir.
+	 * SceneLoader'Ä± ilklendirir.
 	 * 
-	 * @param entityLoader Nesneleri (Entity) yükleyen alt birim
-	 * @param skyLoader Gökyüzü (Skybox) yükleyen alt birim
+	 * @param entityLoader Nesneleri (Entity) yÃ¼kleyen alt birim
+	 * @param skyLoader GÃ¶kyÃ¼zÃ¼ (Skybox) yÃ¼kleyen alt birim
 	 */
 	public SceneLoader(EntityLoader entityLoader, SkyboxLoader skyLoader) {
 		this.entityLoader = entityLoader;
@@ -32,35 +32,35 @@ public class SceneLoader {
 	}
 
 	/**
-	 * Belirtilen klasördeki sahne bilgilerini (entityList.txt vb.) okuyarak Scene nesnesini oluşturur.
+	 * Belirtilen klasÃ¶rdeki sahne bilgilerini (entityList.txt vb.) okuyarak Scene nesnesini oluÅŸturur.
 	 * 
-	 * @param sceneFile Sahne bilgilerini içeren kök dizin
-	 * @return Tamamlanmış ve ayarlanmış yeni Scene
+	 * @param sceneFile Sahne bilgilerini iÃ§eren kÃ¶k dizin
+	 * @return TamamlanmÄ±ÅŸ ve ayarlanmÄ±ÅŸ yeni Scene
 	 */
 	public Scene loadScene(MyFile sceneFile) {
-		// Sahne içerisindeki nesne listesini oku
+		// Sahne iÃ§erisindeki nesne listesini oku
 		MyFile sceneList = new MyFile(sceneFile, LoaderSettings.ENTITY_LIST_FILE);
 		BufferedReader reader = getReader(sceneList);
 		
-		// Arazi, parlak objeler ve standart objelerin dosyalarını listele
+		// Arazi, parlak objeler ve standart objelerin dosyalarÄ±nÄ± listele
 		MyFile[] terrainFiles = readEntityFiles(reader, sceneFile);
 		MyFile[] shinyFiles = readEntityFiles(reader, sceneFile);
 		MyFile[] entityFiles = readEntityFiles(reader, sceneFile);
 		closeReader(reader);
 		
-		// Gökyüzü dokularını yükle
+		// GÃ¶kyÃ¼zÃ¼ dokularÄ±nÄ± yÃ¼kle
 		Skybox sky = skyLoader.loadSkyBox(new MyFile(sceneFile, LoaderSettings.SKYBOX_FOLDER));
 		
 		return createScene(terrainFiles, entityFiles, shinyFiles, sky);
 	}
 
 	/**
-	 * Yüklenmiş dosyalardan yararlanarak sahneyi ayağa kaldırır, kamerayı ekler.
+	 * YÃ¼klenmiÅŸ dosyalardan yararlanarak sahneyi ayaÄŸa kaldÄ±rÄ±r, kamerayÄ± ekler.
 	 * 
-	 * @param terrainFiles Yeryüzü şekilleri ve objeleri
-	 * @param entityFiles Sahnedeki sıradan objeler
-	 * @param shinyFiles Sahnede yansıma yapacak olan objeler
-	 * @param sky Sahneye ait gökyüzü
+	 * @param terrainFiles YeryÃ¼zÃ¼ ÅŸekilleri ve objeleri
+	 * @param entityFiles Sahnedeki sÄ±radan objeler
+	 * @param shinyFiles Sahnede yansÄ±ma yapacak olan objeler
+	 * @param sky Sahneye ait gÃ¶kyÃ¼zÃ¼
 	 * @return Sahne objesi
 	 */
 	private Scene createScene(MyFile[] terrainFiles, MyFile[] entityFiles, MyFile[] shinyFiles, Skybox sky){
@@ -75,7 +75,7 @@ public class SceneLoader {
 		return scene;
 	}
 	
-	/** Sahneye standart Entity'leri yükleyip ekler. */
+	/** Sahneye standart Entity'leri yÃ¼kleyip ekler. */
 	private void addEntities(Scene scene, MyFile[] entityFiles){
 		for(MyFile file : entityFiles){
 			Entity entity = entityLoader.loadEntity(file);
@@ -83,7 +83,7 @@ public class SceneLoader {
 		}
 	}
 	
-	/** Sahneye parlak (shiny) Entity'leri yükleyip ekler. */
+	/** Sahneye parlak (shiny) Entity'leri yÃ¼kleyip ekler. */
 	private void addShinyEntities(Scene scene, MyFile[] entityFiles){
 		for(MyFile file : entityFiles){
 			Entity entity = entityLoader.loadEntity(file);
@@ -91,17 +91,17 @@ public class SceneLoader {
 		}
 	}
 	
-	/** Sahneye arazi (terrain) Entity'lerini yükleyip ekler. */
+	/** Sahneye arazi (terrain) Entity'lerini yÃ¼kleyip ekler. */
 	private void addTerrains(Scene scene, MyFile[] terrainFiles){
 		for(MyFile file : terrainFiles){
 			Entity entity = entityLoader.loadEntity(file);
-			scene.addTerrain(entity);
+			scene.addTerrainEntity(entity);
 		}
 	}
 	
 	/**
-	 * Bir dosyayı okuyacak olan BufferedReader objesini döndürür.
-	 * Dosya bulunamazsa hatayı yazıp programı sonlandırır.
+	 * Bir dosyayÄ± okuyacak olan BufferedReader objesini dÃ¶ndÃ¼rÃ¼r.
+	 * Dosya bulunamazsa hatayÄ± yazÄ±p programÄ± sonlandÄ±rÄ±r.
 	 */
 	private BufferedReader getReader(MyFile file) {
 		try {
@@ -114,7 +114,7 @@ public class SceneLoader {
 		}
 	}
 	
-	/** BufferedReader'ı kapatır. */
+	/** BufferedReader'Ä± kapatÄ±r. */
 	private void closeReader(BufferedReader reader){
 		try {
 			reader.close();
@@ -124,11 +124,11 @@ public class SceneLoader {
 	}
 
 	/**
-	 * Listede belirtilen klasör isimlerini okur ve MyFile dizisi olarak döndürür.
+	 * Listede belirtilen klasÃ¶r isimlerini okur ve MyFile dizisi olarak dÃ¶ndÃ¼rÃ¼r.
 	 * 
-	 * @param reader Satırları okuyan nesne
-	 * @param sceneFile Kök dizin objesi
-	 * @return Liste satırındaki ayrıştırılmış dosyalar
+	 * @param reader SatÄ±rlarÄ± okuyan nesne
+	 * @param sceneFile KÃ¶k dizin objesi
+	 * @return Liste satÄ±rÄ±ndaki ayrÄ±ÅŸtÄ±rÄ±lmÄ±ÅŸ dosyalar
 	 */
 	private MyFile[] readEntityFiles(BufferedReader reader, MyFile sceneFile) {
 		try {
@@ -148,3 +148,4 @@ public class SceneLoader {
 	}
 
 }
+

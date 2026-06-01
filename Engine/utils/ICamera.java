@@ -28,5 +28,9 @@ public interface ICamera {
 	
 	/** @return Projeksiyon ve Görünüm matrislerinin çarpılmış (Projection * View) hali */
 	public Matrix4f getProjectionViewMatrix();
+	
+	public float getPitch();
+	
+	public float getYaw();
 
 }

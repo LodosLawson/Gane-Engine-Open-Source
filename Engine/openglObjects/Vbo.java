@@ -25,6 +25,10 @@ public class Vbo {
 		this.type = type;
 	}
 	
+	public int getId() {
+		return vboId;
+	}
+	
 	/**
 	 * Yeni bir VBO oluşturur.
 	 * 
@@ -98,6 +102,24 @@ public class Vbo {
 	 */
 	public void delete(){
 		GL15.glDeleteBuffers(vboId);
+	}
+	
+	/** Dinamik güncellenebilir boş bir VBO oluşturur (Instanced Rendering için) */
+	public void allocateData(int floatCount) {
+		GL15.glBufferData(type, floatCount * 4, GL15.GL_STREAM_DRAW);
+	}
+
+	/** VBO içindeki verinin belirli bir kısmını günceller */
+	public void updateData(float[] data, FloatBuffer buffer) {
+		buffer.clear();
+		buffer.put(data);
+		buffer.flip();
+		GL15.glBufferSubData(type, 0, buffer);
+	}
+	
+	/** VBO içindeki veriyi doğrudan FloatBuffer kullanarak günceller (Performans için) */
+	public void updateData(FloatBuffer buffer) {
+		GL15.glBufferSubData(type, 0, buffer);
 	}
 
 }

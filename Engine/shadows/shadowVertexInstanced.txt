@@ -1,0 +1,24 @@
+#version 330
+
+// Vertex attributes - explicitly laid out to avoid driver-dependent mat4 slot assignment
+layout(location = 0) in vec3 in_position;
+layout(location = 1) in vec2 in_textureCoords;
+// location 2 = in_normal (NOT used in shadow pass, kept for VAO compatibility)
+
+// Transformation matrix (mat4 occupies 4 consecutive locations: 3, 4, 5, 6)
+layout(location = 3) in mat4 transformationMatrix;
+layout(location = 7) in float textureOffsetIndex;
+
+out vec2 pass_textureCoords;
+
+uniform mat4 projectionViewMatrix;
+uniform float numberOfRows;
+
+void main(void){
+    gl_Position = projectionViewMatrix * (transformationMatrix * vec4(in_position, 1.0));
+    
+    int col = int(textureOffsetIndex) % int(numberOfRows);
+    int row = int(textureOffsetIndex) / int(numberOfRows);
+    vec2 textureOffset = vec2(float(col)/numberOfRows, float(row)/numberOfRows);
+    pass_textureCoords = (in_textureCoords / numberOfRows) + textureOffset;
+}

@@ -19,7 +19,7 @@ public class CubeMapCamera implements ICamera {
 	/**
 	 * Kameranın çizim yapabileceği en uzak mesafe.
 	 */
-	private static final float FAR_PLANE = 200f;
+	private static final float FAR_PLANE = 10000f;
 	
 	/**
 	 * Görüş açısı (Field of View). Küp yüzeyleri çizildiği için 90 derece olması zorunludur.
@@ -118,6 +118,16 @@ public class CubeMapCamera implements ICamera {
 	@Override
 	public void reflect(float height) {
 		// Çevresel kamera yansıma fonksiyonunu şimdilik kullanmıyor.
+	}
+
+	@Override
+	public float getPitch() {
+		return pitch;
+	}
+
+	@Override
+	public float getYaw() {
+		return yaw;
 	}
 
 	@Override

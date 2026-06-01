@@ -27,6 +27,11 @@ public class PhysicsComponent {
 	// Fiziksel sınırları (Kutu, küre vb.)
 	private Collider collider;
 
+	private float volume = -1.0f;
+	private boolean canBeWaterLogged = false;
+	private float waterLoggedRatio = 0.0f;
+	private float waterLoggedRate = 0.05f;
+
 	public PhysicsComponent() {
 		this.velocity = new Vector3f(0, 0, 0);
 		this.acceleration = new Vector3f(0, 0, 0);
@@ -126,6 +131,48 @@ public class PhysicsComponent {
 	public void stop() {
 		this.velocity.set(0, 0, 0);
 		this.acceleration.set(0, 0, 0);
+	}
+
+	public float getVolume() {
+		if (volume > 0.0f) {
+			return volume;
+		}
+		if (collider instanceof AABB) {
+			AABB aabb = (AABB) collider;
+			float dx = Math.max(aabb.getMaxOffset().x - aabb.getMinOffset().x, 0.1f);
+			float dy = Math.max(aabb.getMaxOffset().y - aabb.getMinOffset().y, 0.1f);
+			float dz = Math.max(aabb.getMaxOffset().z - aabb.getMinOffset().z, 0.1f);
+			return dx * dy * dz;
+		}
+		return 1.0f; // Default fallback volume
+	}
+
+	public void setVolume(float volume) {
+		this.volume = volume;
+	}
+
+	public boolean canBeWaterLogged() {
+		return canBeWaterLogged;
+	}
+
+	public void setCanBeWaterLogged(boolean canBeWaterLogged) {
+		this.canBeWaterLogged = canBeWaterLogged;
+	}
+
+	public float getWaterLoggedRatio() {
+		return waterLoggedRatio;
+	}
+
+	public void setWaterLoggedRatio(float waterLoggedRatio) {
+		this.waterLoggedRatio = waterLoggedRatio;
+	}
+
+	public float getWaterLoggedRate() {
+		return waterLoggedRate;
+	}
+
+	public void setWaterLoggedRate(float waterLoggedRate) {
+		this.waterLoggedRate = waterLoggedRate;
 	}
 
 }

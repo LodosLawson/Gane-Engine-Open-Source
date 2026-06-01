@@ -8,7 +8,7 @@ import renderEngine.RenderEngine;
 import scene.Entity;
 import scene.Scene;
 import physics.PhysicsEngine;
-import skybox.Skybox;
+import skybox.classic.Skybox;
 import steam.SteamManager;
 import textures.Texture;
 
@@ -22,7 +22,7 @@ public class Engine {
 
 	public Engine() {
 		NativeLibraryLoader.loadNativeLibraries();
-		SteamManager.init(); // Steam API başlatılıyor
+		SteamManager.init(); // Steam API baÅŸlatÄ±lÄ±yor
 		init();
 	}
 
@@ -44,16 +44,16 @@ public class Engine {
 			camera.move();
 			float delta = renderEngine.getDisplayManager().getFrameTime();
 			
-			// Fiziği güncelle
+			// FiziÄŸi gÃ¼ncelle
 			physicsEngine.update(scene, delta);
 			
-			// Steam arka plan callback'lerini işle
+			// Steam arka plan callback'lerini iÅŸle
 			SteamManager.update();
 			
 			for (Entity entity : scene.getAllEntities()) {
 				entity.update(delta);
 			}
-			renderEngine.renderScene(scene);
+			renderEngine.renderScene(scene, delta);
 			renderEngine.update();
 		}
 		cleanup();
@@ -66,7 +66,7 @@ public class Engine {
 	public void cleanup() {
 		scene.delete();
 		renderEngine.close();
-		SteamManager.shutdown(); // Kapanışta Steam'i kapat
+		SteamManager.shutdown(); // KapanÄ±ÅŸta Steam'i kapat
 		running = false;
 	}
 
@@ -74,3 +74,4 @@ public class Engine {
 		new Engine().run();
 	}
 }
+

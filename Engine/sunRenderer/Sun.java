@@ -11,7 +11,7 @@ import textures.Texture;
 public class Sun {
 
 	// Güneşin kameraya olan varsayılan uzaklığı. Gökyüzü kutusunun (skybox) arkasında kalmamasına dikkat edilmelidir.
-	private static final float SUN_DIS = 50;
+	private static final float SUN_DIS = 1000;
 
 	// Güneşin görünümünü belirleyen kaplama (texture)
 	private final Texture texture;

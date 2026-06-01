@@ -18,12 +18,14 @@ import utils.OpenGlUtils;
 public class ShinyRenderer {
 	
 	private ShinyShader shader;
+	private utils.Frustum frustum;
 
 	/**
 	 * Parlak nesne renderlayıcısını başlatır.
 	 */
 	public ShinyRenderer() {
 		this.shader = new ShinyShader();
+		this.frustum = new utils.Frustum();
 	}
 
 	/**
@@ -34,9 +36,23 @@ public class ShinyRenderer {
 	 * @param camera Oyuncu kamerası
 	 * @param lightDir Sahnenin ana ışık (güneş) yönü
 	 */
-	public void render(List<Entity> shinyEntities, Texture enviromap, ICamera camera, Vector3f lightDir) {
+	public void render(List<Entity> shinyEntities, Texture enviromap, ICamera camera, Vector3f lightDir, scene.Scene scene) {
+		if (shinyEntities == null || shinyEntities.isEmpty()) {
+			return;
+		}
 		prepare(camera, lightDir, enviromap);
+		
+		if (scene.isFrustumCullingEnabled()) {
+			frustum.update(camera.getProjectionViewMatrix());
+		}
+		
 		for (Entity entity : shinyEntities) {
+			if (scene.isFrustumCullingEnabled()) {
+				if (!frustum.isPointInside(entity.getPosition().x, entity.getPosition().y, entity.getPosition().z, entity.getCullingRadius())) {
+					continue;
+				}
+			}
+			
 			// Objenin kendi rengini 0. Doku birimine bağla
 			entity.getSkin().getDiffuseTexture().bindToUnit(0);
 			Vao model = entity.getModel().getVao();
@@ -77,7 +93,9 @@ public class ShinyRenderer {
 		shader.cameraPosition.loadVec3(camera.getPosition());
 		
 		// Çevresel yansıma dokusunu 1. Doku birimine bağla
-		enviromap.bindToUnit(1);
+		if (enviromap != null) {
+			enviromap.bindToUnit(1);
+		}
 		
 		OpenGlUtils.antialias(true);
 		OpenGlUtils.disableBlending();
@@ -90,6 +108,11 @@ public class ShinyRenderer {
 	 */
 	private void finish() {
 		shader.stop();
+		org.lwjgl.opengl.GL13.glActiveTexture(org.lwjgl.opengl.GL13.GL_TEXTURE0);
+		GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+		org.lwjgl.opengl.GL13.glActiveTexture(org.lwjgl.opengl.GL13.GL_TEXTURE1);
+		GL11.glBindTexture(org.lwjgl.opengl.GL13.GL_TEXTURE_CUBE_MAP, 0);
+		org.lwjgl.opengl.GL13.glActiveTexture(org.lwjgl.opengl.GL13.GL_TEXTURE0);
 	}
 
 }
