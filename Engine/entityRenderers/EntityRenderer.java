@@ -114,7 +114,12 @@ public class EntityRenderer {
 			if (skinMap.isEmpty()) continue;
 			
 			Vao vao = model.getVao();
-			vao.bind(0, 1, 2);
+			boolean hasSkeleton = model.getModelData() != null && model.getModelData().getJointIds() != null;
+			if (hasSkeleton) {
+				vao.bind(0, 1, 2, 3, 4);
+			} else {
+				vao.bind(0, 1, 2);
+			}
 			
 			for (scene.Skin skin : skinMap.keySet()) {
 				java.util.List<Entity> list = skinMap.get(skin);
@@ -185,7 +190,11 @@ public class EntityRenderer {
 					if (scene.isOcclusionCullingEnabled()) entity.getOcclusionQuery().end();
 				}
 			}
-			vao.unbind(0, 1, 2);
+			if (hasSkeleton) {
+				vao.unbind(0, 1, 2, 3, 4);
+			} else {
+				vao.unbind(0, 1, 2);
+			}
 		}
 		
 		// 4. Render Occluded Entities (Test Pass)

@@ -80,7 +80,9 @@ public class MainApp {
 		bird.getPosition().set(64, 45, 50); // Kuşu kameranın önüne koy
 		bird.setScale(5.0f); // Kuşu 5 kat büyüt ki gözüksün
 		scene.BirdPlayerController birdController = new scene.BirdPlayerController(camera, terrain);
-		birdController.setModelYawOffset(180.0f); // Blender modelleri için 180 derece dönüş düzeltmesi (gerekirse 90f, 0f veya -90f ile değiştirilebilir)
+		birdController.setModelYawOffset(180.0f); // Blender modelleri için 180 derece dönüş düzeltmesi
+		birdController.setModelPitchOffset(-90.0f); // Yan yatmayı önleyen eğim düzeltmesi (gerekirse 90f veya 0f ile değiştirilebilir)
+		birdController.setModelRollOffset(0.0f); // Gerekirse yuvarlanma (roll) düzeltmesi
 		bird.addComponent(birdController);
 		scene.addEntity(bird);
 

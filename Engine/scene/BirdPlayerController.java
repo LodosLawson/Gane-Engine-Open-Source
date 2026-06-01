@@ -23,6 +23,8 @@ public class BirdPlayerController extends Component {
 	private float hoverTime = 0.0f;
 	private boolean onGround = false;
 	private float modelYawOffset = 0.0f; // Blender/GLB export yaw offset (Varsayılan 0)
+	private float modelPitchOffset = 0.0f; // Blender/GLB export pitch offset
+	private float modelRollOffset = 0.0f; // Blender/GLB export roll offset
 
 	public BirdPlayerController(Camera camera, FlatTerrain terrain) {
 		this.camera = camera;
@@ -35,6 +37,22 @@ public class BirdPlayerController extends Component {
 
 	public float getModelYawOffset() {
 		return modelYawOffset;
+	}
+
+	public void setModelPitchOffset(float offset) {
+		this.modelPitchOffset = offset;
+	}
+
+	public float getModelPitchOffset() {
+		return modelPitchOffset;
+	}
+
+	public void setModelRollOffset(float offset) {
+		this.modelRollOffset = offset;
+	}
+
+	public float getModelRollOffset() {
+		return modelRollOffset;
 	}
 
 	@Override
@@ -149,6 +167,8 @@ public class BirdPlayerController extends Component {
 		}
 
 		gameObject.getPosition().set(x, y, z);
+		gameObject.getRotation().x = modelPitchOffset;
+		gameObject.getRotation().z = modelRollOffset;
 
 		// 3. Animasyon ve Durum (Idle/Uçuş) Yönetimi
 		scene.animation.Animator animator = gameObject.getAnimator();
