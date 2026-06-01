@@ -105,9 +105,8 @@ public class MainApp {
 		long timer = System.currentTimeMillis();
 		int currentFps = 0;
 
-		// POV için Dummy Player (Görünmez Merkez Noktası)
-		scene.Entity dummyPlayer = new scene.Entity(null, null);
-		dummyPlayer.getPosition().set(camera.getPosition());
+		// POV için Player (Kuşu kullanıyoruz)
+		scene.Entity player = bird;
 		boolean vKeyPressed = false;
 		String currentModeStr = "FREE";
 		
@@ -147,7 +146,7 @@ public class MainApp {
 					vKeyPressed = true;
 					if (camera.getMode() == extra.Camera.CameraMode.FREE) {
 						camera.setMode(extra.Camera.CameraMode.FIRST_PERSON);
-						camera.setTarget(dummyPlayer);
+						camera.setTarget(player);
 						currentModeStr = "FIRST PERSON";
 					} else if (camera.getMode() == extra.Camera.CameraMode.FIRST_PERSON) {
 						camera.setMode(extra.Camera.CameraMode.RPG_THIRD_PERSON);
@@ -162,32 +161,59 @@ public class MainApp {
 				vKeyPressed = false;
 			}
 
-			// Dummy Player'ı hareket ettir (Sadece POV modlarında çalışır)
+			// Player'ı hareket ettir (Sadece POV modlarında çalışır)
 			if (camera.getMode() != extra.Camera.CameraMode.FREE) {
-				float moveSpeed = 10.0f * delta;
+				float moveSpeed = 30.0f * delta; // Kuş uçuş hızı
+				float currentYaw = player.getRotation().y;
+				float targetYaw = currentYaw;
+				boolean isMoving = false;
+
 				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_W)) {
-					dummyPlayer.getPosition().x += moveSpeed * Math.sin(Math.toRadians(camera.getYaw()));
-					dummyPlayer.getPosition().z -= moveSpeed * Math.cos(Math.toRadians(camera.getYaw()));
+					player.getPosition().x += moveSpeed * Math.sin(Math.toRadians(camera.getYaw()));
+					player.getPosition().z -= moveSpeed * Math.cos(Math.toRadians(camera.getYaw()));
+					targetYaw = 180 - camera.getYaw();
+					isMoving = true;
 				}
 				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_S)) {
-					dummyPlayer.getPosition().x -= moveSpeed * Math.sin(Math.toRadians(camera.getYaw()));
-					dummyPlayer.getPosition().z += moveSpeed * Math.cos(Math.toRadians(camera.getYaw()));
+					player.getPosition().x -= moveSpeed * Math.sin(Math.toRadians(camera.getYaw()));
+					player.getPosition().z += moveSpeed * Math.cos(Math.toRadians(camera.getYaw()));
+					targetYaw = -camera.getYaw();
+					isMoving = true;
 				}
 				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_A)) {
-					dummyPlayer.getPosition().x -= moveSpeed * Math.cos(Math.toRadians(camera.getYaw()));
-					dummyPlayer.getPosition().z -= moveSpeed * Math.sin(Math.toRadians(camera.getYaw()));
+					player.getPosition().x -= moveSpeed * Math.cos(Math.toRadians(camera.getYaw()));
+					player.getPosition().z -= moveSpeed * Math.sin(Math.toRadians(camera.getYaw()));
+					targetYaw = 90 - camera.getYaw();
+					isMoving = true;
 				}
 				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_D)) {
-					dummyPlayer.getPosition().x += moveSpeed * Math.cos(Math.toRadians(camera.getYaw()));
-					dummyPlayer.getPosition().z += moveSpeed * Math.sin(Math.toRadians(camera.getYaw()));
+					player.getPosition().x += moveSpeed * Math.cos(Math.toRadians(camera.getYaw()));
+					player.getPosition().z += moveSpeed * Math.sin(Math.toRadians(camera.getYaw()));
+					targetYaw = 270 - camera.getYaw();
+					isMoving = true;
 				}
-				// Oyuncuyu yere yapıştır (Arazi Yüksekliğine eşitle)
-				float h = terrain.getHeightAt(dummyPlayer.getPosition().x, dummyPlayer.getPosition().z);
-				dummyPlayer.getPosition().y = h;
-			} else {
-				// FREE moddayken dummy'i kamerayla aynı yere taşı ki First Person'a geçerken
-				// aniden uzağa ışınlanmasın
-				dummyPlayer.getPosition().set(camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+				
+				// Uçuş kontrolleri
+				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_SPACE)) {
+					player.getPosition().y += moveSpeed;
+				}
+				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_LSHIFT)) {
+					player.getPosition().y -= moveSpeed;
+				}
+
+				// Yön interpolasyonu (Smooth rotation)
+				if (isMoving) {
+					float diff = targetYaw - currentYaw;
+					while (diff < -180) diff += 360;
+					while (diff > 180) diff -= 360;
+					player.getRotation().y = currentYaw + diff * 10f * delta;
+				}
+
+				// Oyuncuyu yere yapıştır (Arazi Yüksekliğinin altına düşmesin)
+				float h = terrain.getHeightAt(player.getPosition().x, player.getPosition().z);
+				if (player.getPosition().y < h) {
+					player.getPosition().y = h;
+				}
 			}
 
 			// --- ARAZİ VE OKYANUS KONTROLLERİ ---
