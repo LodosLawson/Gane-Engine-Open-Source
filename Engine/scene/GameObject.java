@@ -37,6 +37,63 @@ public class GameObject extends Entity {
 		initAnimation(getModel());
 	}
 
+	// Multi-Mesh desteği için çocuk objeler listesi
+	private List<GameObject> multiMeshParts = new ArrayList<>();
+
+	/**
+	 * Sadece model dosyasını alıp, eğer içinde gömülü resim (embedded texture) varsa
+	 * onu çıkarıp otomatik olarak Skin oluşturan Tek Parametreli Constructor.
+	 * Ayrıca Multi-Mesh (Çoklu Parça) dosyalarını destekler.
+	 */
+	public GameObject(String glbFilePath) {
+		super(null, null); // Ana taşıyıcı (Görünmez)
+		
+		java.util.List<Model> models = modelLoader.loadModels(new utils.MyFile(glbFilePath));
+		
+		if (models.size() == 1) {
+			// Eğer tek parça ise direkt ana objeye yükle
+			Model model = models.get(0);
+			setModel(model);
+			byte[] embeddedTextureData = model.getModelData() != null ? model.getModelData().getEmbeddedTextureData() : null;
+			if (embeddedTextureData != null) {
+				Texture colorTex = Texture.newTextureFromBuffer(embeddedTextureData).anisotropic().create();
+				setSkin(new Skin(colorTex, null));
+			} else {
+				Texture fallbackTex = Texture.newTexture(new utils.MyFile("res/WoodFloor004.png")).anisotropic().create();
+				setSkin(new Skin(fallbackTex, null));
+			}
+			initAnimation(model);
+		} else {
+			// Eğer çok parçalı (Multi-Mesh) ise çocuk (child) objeler üret
+			for (Model model : models) {
+				GameObject child = new GameObject(model, null);
+				byte[] embeddedTextureData = model.getModelData() != null ? model.getModelData().getEmbeddedTextureData() : null;
+				Skin skin;
+				if (embeddedTextureData != null) {
+					Texture colorTex = Texture.newTextureFromBuffer(embeddedTextureData).anisotropic().create();
+					skin = new Skin(colorTex, null);
+				} else {
+					Texture fallbackTex = Texture.newTexture(new utils.MyFile("res/WoodFloor004.png")).anisotropic().create();
+					skin = new Skin(fallbackTex, null);
+				}
+				
+				skin.setCullBackFaces(!model.getModelData().isDoubleSided());
+				skin.setTransparent(model.getModelData().isTransparent());
+				
+				child.setSkin(skin);
+				multiMeshParts.add(child);
+			}
+			// Multi-mesh için ana animasyonu (varsa) ilk parçadan alabiliriz, fakat genelde multi-mesh animasyonları karmaşıktır.
+			if (!models.isEmpty()) {
+				initAnimation(models.get(0));
+			}
+		}
+	}
+
+	public List<GameObject> getMultiMeshParts() {
+		return multiMeshParts;
+	}
+
 	public GameObject(Model model, Skin skin) {
 		super(model, skin);
 		initAnimation(model);
@@ -113,12 +170,22 @@ public class GameObject extends Entity {
 			start();
 		}
 		
-		// 1. Eklenen tüm harici bileşenleri (Komponentleri) güncelle
+		// 1. Multi-mesh parçalarını ana objeye senkronize et
+		if (!multiMeshParts.isEmpty()) {
+			for (GameObject part : multiMeshParts) {
+				part.getPosition().set(this.getPosition());
+				part.getRotation().set(this.getRotation());
+				part.setScale(this.getScale());
+				part.update(delta); // Animasyon veya alt bileşenler için çocuğu da güncelle
+			}
+		}
+
+		// 2. Eklenen tüm harici bileşenleri (Komponentleri) güncelle
 		for (Component c : components) {
 			c.update(delta);
 		}
 		
-		// 2. Geliştiricinin kendi yazdığı objeye has mantığı çalıştır
+		// 3. Geliştiricinin kendi yazdığı objeye has mantığı çalıştır
 		onUpdate(delta);
 	}
 	

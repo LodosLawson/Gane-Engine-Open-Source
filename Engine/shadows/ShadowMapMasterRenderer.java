@@ -25,7 +25,7 @@ import utils.ICamera;
 
 public class ShadowMapMasterRenderer {
 
-    private static final int SHADOW_MAP_SIZE = 2048; // Performans için 2048'e geri çekildi.
+    private static final int SHADOW_MAP_SIZE = 4096; // Performans ve kalite için 4096'ya çıkarıldı.
     private static final int MAX_INSTANCES = 500000;
     private static final int INSTANCE_DATA_LENGTH = 17;
     private static final FloatBuffer buffer = BufferUtils.createFloatBuffer(MAX_INSTANCES * INSTANCE_DATA_LENGTH);
@@ -114,7 +114,7 @@ public class ShadowMapMasterRenderer {
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         // GL11.glEnable(GL11.GL_VERSION); // Removed invalid state call
         GL11.glEnable(GL11.GL_CULL_FACE);
-        GL11.glCullFace(GL11.GL_FRONT);
+        GL11.glCullFace(GL11.GL_BACK); // Gölge kopmasını (Peter Panning) engellemek için GL_BACK yapıldı
         GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
 
         // --- Render standard and shiny entities ---
@@ -133,7 +133,7 @@ public class ShadowMapMasterRenderer {
             GL11.glDisable(GL11.GL_CULL_FACE);
             renderInstancedEntities(scene.getInstancedEntities());
             GL11.glEnable(GL11.GL_CULL_FACE);
-            GL11.glCullFace(GL11.GL_FRONT);
+            GL11.glCullFace(GL11.GL_BACK);
             instancedShader.stop();
         }
 

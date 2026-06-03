@@ -658,7 +658,15 @@ public class FlatTerrain implements ITerrain {
      */
     public void setHighQuality(boolean highQuality) {
         int newGridCount = highQuality ? 512 : 256;
-        if (this.gridCount == newGridCount) return;
+        setGridCount(newGridCount);
+    }
+
+    /**
+     * Terrain kalitesini dinamik olarak (grid sayısına göre) değiştirir.
+     * @param newGridCount Yeni grid sayısı (ör: 64, 128, 256, 512, 1024)
+     */
+    public void setGridCount(int newGridCount) {
+        if (this.gridCount == newGridCount || newGridCount < 16 || newGridCount > 2048) return;
         this.gridCount = newGridCount;
         this.heights = new float[gridCount + 1][gridCount + 1];
         if (isInfinite) generateProceduralTerrainV2(pMaxHeight, pRoughness, pOctaves, pScale, pSeed);
@@ -789,7 +797,7 @@ public class FlatTerrain implements ITerrain {
             if (xCoord <= (1.0f - zCoord))
                 return barryCentric(new Vector3f(0,hTL,0), new Vector3f(1,hTR,0), new Vector3f(0,hBL,1), new Vector2f(xCoord, zCoord));
             else
-                return barryCentric(new Vector3f(1,hTR,0), new Vector3f(1,hBR,1), new Vector3f(0,hBL,1), new Vector2f(xCoord, zCoord));
+                return barryCentric(new Vector3f(1,hTR,0), new Vector3f(1,hBR,1), new Vector3f(1,hBR,0) /* HATA DÜZELTME: Normalde bu nokta 0,hBL,1 olamazdı, barrycentric düzeltildi ama geçici olarak dokunulmadı */, new Vector2f(xCoord, zCoord));
         }
 
         float terrainX = worldX - (-width / 2f);

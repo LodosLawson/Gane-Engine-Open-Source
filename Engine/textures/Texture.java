@@ -78,6 +78,16 @@ public class Texture {
 	}
 
 	/**
+	 * RAM üzerindeki gömülü bir resimden doku yüklemek için Builder döndürür.
+	 * 
+	 * @param imageBytes Resim bayt dizisi
+	 * @return Doku ayarlarını yapmak için TextureBuilder nesnesi
+	 */
+	public static TextureBuilder newTextureFromBuffer(byte[] imageBytes) {
+		return new TextureBuilder(imageBytes);
+	}
+
+	/**
 	 * Birden fazla görsel dosyasından bir CubeMap (Küp Kaplaması) oluşturur.
 	 * Genellikle gökyüzü (Skybox) veya çevresel yansımalar için kullanılır.
 	 * 

@@ -561,13 +561,22 @@ smr.getShadowBox().setShadowDistance(200f);  // 200 birim mesafeye kadar gölge
 
 ## 12. 🖌️ Post Processing — `postProcessing`
 
+Motorda `PostProcessing.currentRenderMode` üzerinden veya oyundayken **[X] tuşu** ile geçiş yapılabilen 4 farklı görsel filtre (Render Mode) mevcuttur:
+* **NORMAL:** Standart 3D grafikler.
+* **PIXELATE:** Düşük çözünürlük hissi veren mozaik/retro piksel filtresi.
+* **GRAYSCALE:** Tamamen siyah-beyaz (dramatik/Luma) renk dönüşümü.
+* **CARTOON:** Sobel kenar tespiti (Luma bazlı) ve renk posterizasyonu (gamma düzeltmeli) ile elde edilen Low-Poly/Çizgi Film stili.
+
 | Sınıf | Açıklama |
 |-------|----------|
-| `PostProcessing` | Post-processing pipeline yöneticisi |
+| `PostProcessing` | Pipeline yöneticisi (RenderMode yönetimini içerir) |
 | `Fbo` | Frame Buffer Object soyutlaması |
 | `ContrastFilter` | Kontrast ayarı |
 | `HorizontalBlur` / `VerticalBlur` | Gaussian Blur |
 | `CombineFilter` | Bloom birleştirme |
+| `PixelateFilter` | Pixel Art efekti |
+| `GrayscaleFilter` | Siyah Beyaz (Monochrome) efekti |
+| `CartoonFilter` | Karton (Cel-Shading) efekti |
 
 ---
 
@@ -688,7 +697,21 @@ scene.addPointLight(new Light(
 
 ---
 
-## 21. 🛠️ Utilities — `utils`
+## 21. 🎮 Default Controls (Varsayılan Kontrolcüler) — `default_controls`
+
+Oyun motoruna eklenen hazır nesneler için önceden kodlanmış fizik/oyun kontrol komponentleri.
+
+| Sınıf | Açıklama |
+|-------|----------|
+| `BirdPlayerController` | Oyuncunun uçan bir kuşu kontrol etmesini sağlar (Hız, kanat çırpma, süzülme, yerçekimi). |
+| `BirdAIController` | NPC kuşların yapay zeka ile etrafta rastgele uçmalarını sağlar. |
+| `ShipController` | Gemi fiziğini simüle eder. Su sürtünmesi (Drag), ivmelenme, dümen (Rudder), gaz kolu (Throttle) ve dalga beşik hareketlerini (Bobbing/Roll/Pitch) içerir. |
+| `FishPlayerController` | Oyuncunun bir balığı WASD ile yüzdürmesini ve yönlendirmesini sağlar (Suyun altı fiziği). |
+| `FishController` | Denizdeki NPC balıkların rastgele derinliklerde ve yönlerde yüzmesini (AI) sağlar. |
+
+---
+
+## 22. 🛠️ Utilities — `utils`
 
 | Sınıf | Açıklama |
 |-------|----------|
@@ -706,7 +729,7 @@ scene.addPointLight(new Light(
 
 ---
 
-## 22. 🎨 Shader Altyapısı — `shaders`
+## 23. 🎨 Shader Altyapısı — `shaders`
 
 | Sınıf | Açıklama |
 |-------|----------|

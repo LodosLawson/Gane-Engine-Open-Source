@@ -263,7 +263,7 @@ public class Scene {
 	}
 
 	/**
-	 * Sahneye standart bir nesne (AÃ„Å¸aÃƒÂ§, SandÃ„Â±k vb.) ekler ve ÃƒÂ¶zelliklerine gÃƒÂ¶re doÃ„Å¸ru alt listelere daÃ„Å¸Ã„Â±tÃ„Â±r.
+	 * Sahneye standart bir nesne (Ağaç, Sandık vb.) ekler ve özelliklerine göre doğru alt listelere dağıtır.
 	 */
 	public void addEntity(Entity entity) {
 		standardEntities.add(entity);
@@ -276,6 +276,16 @@ public class Scene {
 		if(entity.isImportant()){
 			importantEntities.add(entity);
 		}
+		
+		// Eğer bu obje çoklu parçadan oluşuyorsa (Multi-Mesh) parçaları da otomatik sahneye ekle
+		if (entity instanceof GameObject) {
+			GameObject go = (GameObject) entity;
+			if (go.getMultiMeshParts() != null) {
+				for (GameObject part : go.getMultiMeshParts()) {
+					addEntity(part);
+				}
+			}
+		}
 	}
 
 	public void removeEntity(Entity entity) {
@@ -284,6 +294,15 @@ public class Scene {
 		reflectableEntities.remove(entity);
 		importantEntities.remove(entity);
 		shinyEntities.remove(entity);
+		
+		if (entity instanceof GameObject) {
+			GameObject go = (GameObject) entity;
+			if (go.getMultiMeshParts() != null) {
+				for (GameObject part : go.getMultiMeshParts()) {
+					removeEntity(part);
+				}
+			}
+		}
 	}
 
 	/** @return Sahnenin gÃƒÂ¶kyÃƒÂ¼zÃƒÂ¼ objesini dÃƒÂ¶ndÃƒÂ¼rÃƒÂ¼r */

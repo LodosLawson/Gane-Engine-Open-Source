@@ -30,6 +30,9 @@ public class DayNightManager {
     private boolean planetaryMode = false;
     private Vector3f planetPosition = new Vector3f();
 
+    private float sunOrbitYaw = 20.0f; // Güneşin doğuş-batış ekseninin rotasyonu (derece)
+
+
     public DayNightManager(Scene scene, float initialTimeOfDay, float timeMultiplier) {
         this.scene = scene;
         this.timeOfDay = initialTimeOfDay;
@@ -75,10 +78,15 @@ public class DayNightManager {
             sunHeight = 1.0f; // Hep tam aydÄ±nlÄ±k, gÃ¶lgede kalan yerler kendi kararÄ±r.
         } else {
             float sunDirY = (float)Math.sin(sunAngle);
-            float sunDirX = (float)Math.cos(sunAngle);
-            float sunDirZ = 0.2f; // Hafif Ã§apraz vursun
+            float baseDirX = (float)Math.cos(sunAngle);
+            float baseDirZ = 0.0f; // Temel yörünge düzlemi
 
-            sunDirection = new Vector3f(sunDirX, sunDirY, sunDirZ);
+            // Güneş yörüngesini Y ekseni etrafında döndür (Compass rotation / Yaw)
+            float yawRad = (float)Math.toRadians(sunOrbitYaw);
+            float rotatedX = baseDirX * (float)Math.cos(yawRad) - baseDirZ * (float)Math.sin(yawRad);
+            float rotatedZ = baseDirX * (float)Math.sin(yawRad) + baseDirZ * (float)Math.cos(yawRad);
+
+            sunDirection = new Vector3f(rotatedX, sunDirY, rotatedZ);
             if (sunDirection.lengthSquared() > 0) {
                 sunDirection.normalise();
             }
@@ -172,6 +180,14 @@ public class DayNightManager {
     
     public void setPlanetPosition(Vector3f pos) {
         this.planetPosition.set(pos);
+    }
+
+    public float getSunOrbitYaw() {
+        return sunOrbitYaw;
+    }
+
+    public void setSunOrbitYaw(float sunOrbitYaw) {
+        this.sunOrbitYaw = sunOrbitYaw;
     }
 }
 

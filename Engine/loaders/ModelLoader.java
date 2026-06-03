@@ -36,6 +36,35 @@ public class ModelLoader {
 		return new Model(vao, data);
 	}
 
+	/**
+	 * Multi-Mesh destekli yükleyici. GLB dosyasındaki tüm alt parçaları (Mesh) ayrı modeller olarak yükler.
+	 * 
+	 * @param modelFile Yüklenecek dosya
+	 * @return Yüklenmiş modellerin listesi
+	 */
+	public java.util.List<Model> loadModels(MyFile modelFile) {
+		java.util.List<Model> models = new java.util.ArrayList<>();
+		
+		if (modelFile.getPath().toLowerCase().endsWith(".glb") || modelFile.getPath().toLowerCase().endsWith(".gld")) {
+			java.util.List<ModelData> dataList = objConverter.GLBFileLoader.loadGLBModels(modelFile);
+			for (ModelData data : dataList) {
+				Vao vao = Vao.create();
+				if (data.getJointIds() != null && data.getVertexWeights() != null) {
+					vao.storeData(data.getIndices(), data.getVertexCount(), data.getVertices(), data.getTextureCoords(),
+							data.getNormals(), data.getJointIds(), data.getVertexWeights());
+				} else {
+					vao.storeData(data.getIndices(), data.getVertexCount(), data.getVertices(), data.getTextureCoords(),
+							data.getNormals());
+				}
+				models.add(new Model(vao, data));
+			}
+		} else {
+			// OBJ dosyaları için (Tek model)
+			models.add(loadModel(modelFile));
+		}
+		return models;
+	}
+
 	public Model loadModel(MyFile modelFile, float scale) {
 		ModelData data;
 		if (modelFile.getPath().toLowerCase().endsWith(".glb") || modelFile.getPath().toLowerCase().endsWith(".gld")) {

@@ -1,5 +1,7 @@
-package scene;
+package default_controls;
 
+import scene.Component;
+import scene.GameObject;
 import java.util.Random;
 import org.lwjgl.util.vector.Vector3f;
 import terrain.flat.FlatTerrain;
@@ -13,7 +15,7 @@ public class BirdAIController extends Component {
 	private final FlatTerrain terrain;
 	private final Random random = new Random();
 
-	private float moveSpeed = 22.0f; // AI kuşları oyuncudan biraz daha yavaş uçarlar
+	private float moveSpeed; 
 	private float gravity = -20.0f;
 
 	private Vector3f targetPosition = new Vector3f();
@@ -25,9 +27,9 @@ public class BirdAIController extends Component {
 	private float modelRollOffset = 0.0f;
 
 	// AI Uçuş Yükseklik limitleri
-	private float minFlightHeight = 35.0f;
-	private float maxFlightHeight = 100.0f;
-	private float wanderRange = 350.0f; // Her adımda en fazla ne kadar uzağa yeni hedef seçeceği
+	private float minFlightHeight;
+	private float maxFlightHeight;
+	private float wanderRange; // Her adımda en fazla ne kadar uzağa yeni hedef seçeceği
 
 	public BirdAIController(FlatTerrain terrain) {
 		this.terrain = terrain;
@@ -35,6 +37,12 @@ public class BirdAIController extends Component {
 
 	@Override
 	public void start() {
+		// Her kuşa farklı karakter/davranış ata
+		this.moveSpeed = 15.0f + random.nextFloat() * 15.0f; // 15 ile 30 arası hız
+		this.minFlightHeight = 15.0f + random.nextFloat() * 20.0f; 
+		this.maxFlightHeight = 60.0f + random.nextFloat() * 60.0f;
+		this.wanderRange = 200.0f + random.nextFloat() * 400.0f; 
+		
 		if (gameObject != null) {
 			gameObject.setCullingRadius(500.0f); // Kameralardan aniden kaybolmasını engelle
 			chooseNewTarget();
@@ -74,18 +82,19 @@ public class BirdAIController extends Component {
 			y += dirY * moveSpeed * delta;
 			z += dirZ * moveSpeed * delta;
 
-			// Arazi yüksekliğini kontrol et ve çarpmaktan kaçın
+			// Arazi yüksekliğini kontrol et ve çarpmaktan (veya suya girmekten) kaçın
 			float groundHeight = terrain.getHeightAt(x, z);
-			if (y < groundHeight + 10.0f) {
-				y = groundHeight + 10.0f;
-				chooseNewTarget(); // Çarpmak üzereysek rotayı değiştir
+			float minSafeHeight = Math.max(groundHeight, 6.0f) + 10.0f; // Minimum 16.0 Yüksekliğinde (Su 5.0 + 11.0)
+			if (y < minSafeHeight) {
+				y += 30.0f * delta; // Yavaşça yüksel (Sertçe zıplamak yerine)
+				targetPosition.y = Math.max(targetPosition.y, minSafeHeight + 15.0f); // Hedefi de yukarı çek
 			}
 
 			gameObject.getPosition().set(x, y, z);
 
 			// 3. Yönelim Açılarını Hesapla (Doğrultuya göre dönüş)
 			// Yatay dönüş açısı (Yaw)
-			float targetYaw = (float) Math.toDegrees(Math.atan2(dirX, -dirZ));
+			float targetYaw = (float) Math.toDegrees(Math.atan2(-dirX, -dirZ));
 			float currentYaw = gameObject.getRotation().y;
 			float targetVisualYaw = targetYaw + modelYawOffset;
 			float diffYaw = targetVisualYaw - currentYaw;
@@ -94,7 +103,7 @@ public class BirdAIController extends Component {
 			gameObject.getRotation().y = currentYaw + diffYaw * 4f * delta;
 
 			// Dikey eğim açısı (Pitch)
-			float targetPitch = (float) Math.toDegrees(Math.asin(-dirY));
+			float targetPitch = (float) Math.toDegrees(Math.asin(-dirY)); // +Pitch aşağı, -Pitch yukarı bakar
 			float currentPitch = gameObject.getRotation().x;
 			float targetVisualPitch = targetPitch + modelPitchOffset;
 			float diffPitch = targetVisualPitch - currentPitch;
@@ -107,7 +116,8 @@ public class BirdAIController extends Component {
 		scene.animation.Animator animator = gameObject.getAnimator();
 		if (animator != null) {
 			animator.resume();
-			animator.setSpeed(1.0f);
+			// Hıza oranlı animasyon hızı
+			animator.setSpeed(moveSpeed / 22.0f);
 		}
 	}
 

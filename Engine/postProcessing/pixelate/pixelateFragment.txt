@@ -1,0 +1,16 @@
+#version 150
+
+in vec2 textureCoords;
+out vec4 out_Colour;
+
+uniform sampler2D colourTexture;
+uniform float screenWidth;
+uniform float screenHeight;
+uniform float pixelSize;
+
+void main(void){
+    float dx = pixelSize * (1.0 / screenWidth);
+    float dy = pixelSize * (1.0 / screenHeight);
+    vec2 coord = vec2(dx * floor(textureCoords.x / dx), dy * floor(textureCoords.y / dy));
+    out_Colour = texture(colourTexture, coord);
+}

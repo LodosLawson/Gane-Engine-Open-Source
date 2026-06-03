@@ -47,6 +47,12 @@ public class OceanShader extends ShaderProgram {
 	
 	private shaders.UniformFloat uWindStrength = new shaders.UniformFloat("uWindStrength");
 
+	// Gemi su alma önlemi (İçeri giren suyu kesmek için)
+	private UniformVec3 uShipPos = new UniformVec3("uShipPos");
+	private UniformVec2 uShipDim = new UniformVec2("uShipDim"); // x=Uzunluk, y=Genişlik
+	private UniformFloat uShipYaw = new UniformFloat("uShipYaw");
+	private UniformFloat uShipEnabled = new UniformFloat("uShipEnabled");
+
 	// Depth and Shore blending
 	private shaders.UniformFloat uNearPlane = new shaders.UniformFloat("uNearPlane");
 	private shaders.UniformFloat uFarPlane = new shaders.UniformFloat("uFarPlane");
@@ -84,8 +90,20 @@ public class OceanShader extends ShaderProgram {
 		list.add(uWindStrength);
 		list.add(uNearPlane);
 		list.add(uFarPlane);
+		
+		list.add(uShipPos);
+		list.add(uShipDim);
+		list.add(uShipYaw);
+		list.add(uShipEnabled);
 
 		super.storeAllUniformLocations(list.toArray(new shaders.Uniform[0]));
+	}
+
+	public void loadShipCutout(Vector3f pos, Vector2f dim, float yaw, boolean enabled) {
+		uShipPos.loadVec3(pos);
+		uShipDim.loadVec2(dim);
+		uShipYaw.loadFloat(yaw);
+		uShipEnabled.loadFloat(enabled ? 1.0f : 0.0f);
 	}
 
 	public void loadMatLocal(Matrix4f matrix) {

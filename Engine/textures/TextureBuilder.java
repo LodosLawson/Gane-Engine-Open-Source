@@ -20,6 +20,8 @@ public class TextureBuilder {
 	
 	// Yüklenecek dokunun dosya nesnesi
 	private MyFile file;
+	// RAM üzerinden yüklenecek doku bayt dizisi
+	private byte[] imageBytes;
 	
 	/**
 	 * Belirtilen dosya için bir doku yapılandırıcısı oluşturur.
@@ -30,11 +32,24 @@ public class TextureBuilder {
 	}
 	
 	/**
+	 * Bellekteki bir bayt dizisi (embedded image) için doku yapılandırıcısı oluşturur.
+	 * @param imageBytes Resim bayt dizisi
+	 */
+	protected TextureBuilder(byte[] imageBytes){
+		this.imageBytes = imageBytes;
+	}
+	
+	/**
 	 * Belirlenen ayarlarla dokuyu diskten okuyup GPU'ya yükler ve Texture nesnesi olarak döndürür.
 	 * @return GPU'ya yüklenmiş Texture nesnesi
 	 */
 	public Texture create(){
-		TextureData textureData = TextureUtils.decodeTextureFile(file);
+		TextureData textureData;
+		if (imageBytes != null) {
+			textureData = TextureUtils.decodeTextureBuffer(imageBytes);
+		} else {
+			textureData = TextureUtils.decodeTextureFile(file);
+		}
 		int textureId = TextureUtils.loadTextureToOpenGL(textureData, this);
 		return new Texture(textureId, textureData.getWidth());
 	}

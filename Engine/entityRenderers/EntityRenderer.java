@@ -154,11 +154,11 @@ public class EntityRenderer {
 					transformMatrix.setIdentity();
 					org.lwjgl.util.vector.Matrix4f.translate(entity.getPosition(), transformMatrix, transformMatrix);
 					
-					if (entity.getRotation().x != 0) {
-						org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getRotation().x), AXIS_X, transformMatrix, transformMatrix);
-					}
 					if (entity.getRotation().y != 0) {
 						org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getRotation().y), AXIS_Y, transformMatrix, transformMatrix);
+					}
+					if (entity.getRotation().x != 0) {
+						org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getRotation().x), AXIS_X, transformMatrix, transformMatrix);
 					}
 					if (entity.getRotation().z != 0) {
 						org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getRotation().z), AXIS_Z, transformMatrix, transformMatrix);
@@ -209,8 +209,8 @@ public class EntityRenderer {
 				
 				transformMatrix.setIdentity();
 				org.lwjgl.util.vector.Matrix4f.translate(entity.getPosition(), transformMatrix, transformMatrix);
-				if (entity.getRotation().x != 0) org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getRotation().x), AXIS_X, transformMatrix, transformMatrix);
 				if (entity.getRotation().y != 0) org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getRotation().y), AXIS_Y, transformMatrix, transformMatrix);
+				if (entity.getRotation().x != 0) org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getRotation().x), AXIS_X, transformMatrix, transformMatrix);
 				if (entity.getRotation().z != 0) org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getRotation().z), AXIS_Z, transformMatrix, transformMatrix);
 				if (entity.getScale() != 1.0f) {
 					scaleVector.set(entity.getScale(), entity.getScale(), entity.getScale());

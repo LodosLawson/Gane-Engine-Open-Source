@@ -116,6 +116,10 @@ public class Camera implements ICamera {
 		this.target = target;
 	}
 
+	public scene.Entity getTarget() {
+		return target;
+	}
+
 	public void setMode(CameraMode mode) {
 		this.currentMode = mode;
 	}
@@ -473,8 +477,8 @@ public class Camera implements ICamera {
 		if (Mouse.isButtonDown(1)) {
 			float pitchChange = Mouse.getDY() * 0.2f;
 			pitch -= pitchChange;
-			if (pitch < 0f) {
-				pitch = 0f;
+			if (pitch < -90f) {
+				pitch = -90f;
 			} else if (pitch > 90) {
 				pitch = 90;
 			}
@@ -503,7 +507,7 @@ public class Camera implements ICamera {
 	 * açısını hesaplar.
 	 */
 	private void calculateAngleAroundPlayer() {
-		if (Mouse.isButtonDown(0)) {
+		if (Mouse.isButtonDown(0) || Mouse.isButtonDown(1)) {
 			float angleChange = Mouse.getDX() * 0.3f;
 			angleAroundPlayer.increaseTarget(-angleChange);
 		} else if (Keyboard.isKeyDown(Keyboard.KEY_R)) {

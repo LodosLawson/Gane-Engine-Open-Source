@@ -12,6 +12,10 @@ public class ModelData {
 
 	private float[] joints;
 	private float[] weights;
+	
+	private byte[] embeddedTextureData;
+	private boolean doubleSided = false;
+	private boolean transparent = false;
 
 	private scene.animation.Joint rootJoint;
 	private int jointCount;
@@ -61,6 +65,30 @@ public class ModelData {
 
 	public float getFurthestPoint() {
 		return furthestPoint;
+	}
+
+	public byte[] getEmbeddedTextureData() {
+		return embeddedTextureData;
+	}
+
+	public void setEmbeddedTextureData(byte[] embeddedTextureData) {
+		this.embeddedTextureData = embeddedTextureData;
+	}
+
+	public boolean isDoubleSided() {
+		return doubleSided;
+	}
+
+	public void setDoubleSided(boolean doubleSided) {
+		this.doubleSided = doubleSided;
+	}
+
+	public boolean isTransparent() {
+		return transparent;
+	}
+
+	public void setTransparent(boolean transparent) {
+		this.transparent = transparent;
 	}
 
 	public float[] getJointIds() {

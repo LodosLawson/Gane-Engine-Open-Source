@@ -45,6 +45,12 @@ uniform float uFogDensity;
 uniform float uFogStart;
 uniform vec3 eyePos;
 
+// --- SHIP CUTOUT UNIFORMS ---
+uniform float uShipEnabled;
+uniform vec3 uShipPos;
+uniform float uShipYaw;
+uniform vec2 uShipDim;
+
 // --- SIMPLE PROCEDURAL NOISE ---
 float hash(vec2 p) {
     p  = fract(p * vec2(5.3983, 5.4427));
@@ -76,6 +82,26 @@ void main()
 	const vec3 perlinFrequency	= vec3(1.12, 0.59, 0.23);
 	const vec3 perlinGradient	= vec3(0.014, 0.016, 0.022);
 	vec3 sundir = normalize(-lightDirection); // Pointing towards light source
+
+	// --- SHIP CUTOUT LOGIC ---
+	// Geminin icine giren sulari gizle (discard)
+	if (uShipEnabled > 0.5) {
+		vec2 offset = pass_worldPos.xz - uShipPos.xz;
+		
+		// Modelin yönüne göre ofseti ters çevir (Gemi modeli 90 derece dönük olabilir vs.)
+		// Biz rotation.y'yi (radyan) verdik.
+		float c = cos(-uShipYaw);
+		float s = sin(-uShipYaw);
+		vec2 localOffset = vec2(offset.x * c - offset.y * s, offset.x * s + offset.y * c);
+		
+		// Elips formülü x^2 / a^2 + y^2 / b^2 < 1.0 (a=uzunluk, b=genişlik)
+		float distSq = (localOffset.x * localOffset.x) / (uShipDim.x * uShipDim.x) + 
+					   (localOffset.y * localOffset.y) / (uShipDim.y * uShipDim.y);
+					   
+		if (distSq < 1.0) {
+			discard; // Geminin içindeki suyu çizme!
+		}
+	}
 
 	// blend with Perlin waves
 	float dist = length(vdir.xz);

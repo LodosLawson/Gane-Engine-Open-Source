@@ -1,0 +1,12 @@
+#version 150
+
+in vec2 textureCoords;
+out vec4 out_Colour;
+
+uniform sampler2D colourTexture;
+
+void main(void){
+    vec4 color = texture(colourTexture, textureCoords);
+    float luma = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+    out_Colour = vec4(luma, luma, luma, color.a);
+}

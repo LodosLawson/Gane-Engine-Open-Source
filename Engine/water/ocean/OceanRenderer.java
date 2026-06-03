@@ -12,6 +12,8 @@ import utils.ICamera;
 import water.tile.WaterFrameBuffers;
 
 public class OceanRenderer {
+	
+	public static boolean renderWireframe = false;
 
 	private OceanShader shader;
 	private OceanMesh mesh;
@@ -148,8 +150,19 @@ public class OceanRenderer {
 				0.5f / OceanFFT.DISP_MAP_SIZE,
 				x / OceanFFT.PATCH_SIZE,
 				z / OceanFFT.PATCH_SIZE));
+				
+		if (renderWireframe) {
+			GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_LINE);
+			// Tel kafes çok karanlık olmasın diye okyanus rengini geçici olarak parlak yapalım
+			shader.loadOceanColor(new Vector3f(0.0f, 1.0f, 1.0f)); 
+		}
 
 		GL11.glDrawElements(GL11.GL_TRIANGLES, mesh.getVao().getIndexCount(), GL11.GL_UNSIGNED_INT, 0);
+		
+		if (renderWireframe) {
+			GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_FILL);
+			shader.loadOceanColor(oceanColor); // Rengi eski haline döndür
+		}
 	}
 
 	private void prepareRender(ICamera camera, Scene scene) {
@@ -167,9 +180,9 @@ public class OceanRenderer {
 
 		shader.loadFogParams(scene.getFogColor(), scene.getFogDensity(), scene.getFogStart());
 
-		// RÃ¼zgar ÅŸiddetine gÃ¶re dalga boyutlarÄ±nÄ± belirle
+		// Rüzgar şiddetine göre dalga boyutlarını belirle
 		float windSpeed = scene.getWindVelocity().length();
-		float windStrength = Math.max(0.2f, windSpeed * 0.15f); // Dalga yÃ¼ksekliÄŸi rÃ¼zgarla artsÄ±n
+		float windStrength = Math.max(0.2f, windSpeed * 0.15f); // Dalga yüksekliği rüzgarla artsın
 		shader.loadWindStrength(windStrength);
 
 		// Load Cloud Shadows
@@ -180,6 +193,26 @@ public class OceanRenderer {
 					sky.isCloudsEnabled(), sky.getClusters());
 		} else {
 			shader.loadCloudShadowData(0f, new org.lwjgl.util.vector.Vector2f(0, 0), false, null);
+		}
+		
+		// Gemi içi su kesme (Cutout)
+		boolean shipFound = false;
+		for (scene.Entity e : scene.getAllEntities()) {
+			if (e instanceof scene.GameObject) {
+				scene.GameObject go = (scene.GameObject) e;
+				if (go.getComponent(default_controls.ShipController.class) != null) {
+					// Gemi bulundu, verileri gönder
+					// Genişlik ve Uzunluk tahmini değerler, gemi modeline göre ayarlanabilir
+					org.lwjgl.util.vector.Vector2f shipDim = new org.lwjgl.util.vector.Vector2f(7.5f, 2.8f); 
+					// Geçici olarak "false" yapıyoruz çünkü geminin tabanı yoksa denizin dibi görünüyor (boşluk hatası)
+					shader.loadShipCutout(go.getPosition(), shipDim, (float) Math.toRadians(go.getRotation().y), false);
+					shipFound = true;
+					break;
+				}
+			}
+		}
+		if (!shipFound) {
+			shader.loadShipCutout(new Vector3f(), new org.lwjgl.util.vector.Vector2f(), 0, false);
 		}
 
 		mesh.getVao().bind(0);
