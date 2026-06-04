@@ -117,7 +117,20 @@ public class HierarchyPanel extends JPanel {
 				});
 			}
 		});
-		add(addBtn, BorderLayout.SOUTH);
+		
+		JButton addCamBtn = new JButton("Add Camera");
+		addCamBtn.addActionListener(e -> {
+			scene.CameraEntity cam = new scene.CameraEntity();
+			viewport.getScene().addEntity(cam);
+			allEntities.add(cam);
+			filter();
+			entityList.setSelectedValue(cam, true);
+		});
+		
+		JPanel bottomPanel = new JPanel(new java.awt.GridLayout(1, 2, 5, 5));
+		bottomPanel.add(addBtn);
+		bottomPanel.add(addCamBtn);
+		add(bottomPanel, BorderLayout.SOUTH);
 	}
 	
 	private void filter() {

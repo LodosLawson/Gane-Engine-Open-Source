@@ -52,6 +52,17 @@ public class SceneSerializer {
 					
 					entitiesArray.put(objJson);
 				}
+			} else if (e instanceof scene.CameraEntity) {
+				scene.CameraEntity ce = (scene.CameraEntity) e;
+				JSONObject objJson = new JSONObject();
+				objJson.put("type", "CameraEntity");
+				objJson.put("mode", ce.getMode().name());
+				JSONObject pos = new JSONObject();
+				pos.put("x", ce.getPosition().x);
+				pos.put("y", ce.getPosition().y);
+				pos.put("z", ce.getPosition().z);
+				objJson.put("position", pos);
+				entitiesArray.put(objJson);
 			}
 		}
 		
@@ -144,6 +155,20 @@ public class SceneSerializer {
 						} catch (Exception objEx) {
 							System.err.println("Obje yuklenemedi (" + path + "): " + objEx.getMessage());
 						}
+					} else if (type.equals("CameraEntity")) {
+						scene.CameraEntity cam = new scene.CameraEntity();
+						JSONObject pos = objJson.getJSONObject("position");
+						cam.getPosition().set(pos.getFloat("x"), pos.getFloat("y"), pos.getFloat("z"));
+						try {
+							String modeStr = objJson.getString("mode");
+							cam.setMode(extra.Camera.CameraMode.valueOf(modeStr));
+						} catch (Exception e) {}
+						
+						viewport.getScene().addEntity(cam);
+						
+						javax.swing.SwingUtilities.invokeLater(() -> {
+							// Gorsel secim simdilik pasif
+						});
 					}
 				}
 				

@@ -27,7 +27,12 @@ public class InspectorPanel extends JPanel {
 	private JTextField posX, posY, posZ;
 	private JTextField rotX, rotY, rotZ;
 	private JTextField scaleTxt;
-	private JCheckBox chkTransparent, chkShadow, chkReflection;
+	private JCheckBox chkTransparent;
+	private JCheckBox chkShadow;
+	private JCheckBox chkReflection;
+	
+	private JPanel cameraPanel;
+	private JComboBox<extra.Camera.CameraMode> cameraModeCombo;
 	
 	public InspectorPanel() {
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -71,15 +76,30 @@ public class InspectorPanel extends JPanel {
 		});
 		actionsPanel.add(applyBtn);
 		actionsPanel.add(scriptBtn);
+		// 4. Camera Panel
+		cameraPanel = new JPanel(new GridLayout(2, 1, 5, 5));
+		cameraPanel.setBorder(BorderFactory.createTitledBorder("Camera Properties"));
+		cameraPanel.add(new JLabel("Camera Mode:"));
+		cameraModeCombo = new JComboBox<>(extra.Camera.CameraMode.values());
+		cameraModeCombo.addActionListener(e -> {
+			if (selectedEntity instanceof scene.CameraEntity) {
+				((scene.CameraEntity)selectedEntity).setMode((extra.Camera.CameraMode)cameraModeCombo.getSelectedItem());
+			}
+		});
+		cameraPanel.add(cameraModeCombo);
+		cameraPanel.setVisible(false); // Default gizli
 		
 		// Hizalamalar
 		transformPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 		materialPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 		actionsPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		cameraPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 		
 		add(transformPanel);
 		add(Box.createVerticalStrut(10));
 		add(materialPanel);
+		add(Box.createVerticalStrut(10));
+		add(cameraPanel);
 		add(Box.createVerticalStrut(10));
 		add(actionsPanel);
 	}
@@ -105,6 +125,13 @@ public class InspectorPanel extends JPanel {
 			chkShadow.setSelected(entity.isShadowCasting());
 			chkReflection.setSelected(entity.hasReflection());
 			
+			if (entity instanceof scene.CameraEntity) {
+				cameraPanel.setVisible(true);
+				cameraModeCombo.setSelectedItem(((scene.CameraEntity)entity).getMode());
+			} else {
+				cameraPanel.setVisible(false);
+			}
+			
 		} else {
 			posX.setText(""); posY.setText(""); posZ.setText("");
 			rotX.setText(""); rotY.setText(""); rotZ.setText("");
@@ -112,7 +139,11 @@ public class InspectorPanel extends JPanel {
 			chkTransparent.setSelected(false);
 			chkShadow.setSelected(false);
 			chkReflection.setSelected(false);
+			cameraPanel.setVisible(false);
 		}
+		
+		revalidate();
+		repaint();
 	}
 	
 	public void applyValues() {

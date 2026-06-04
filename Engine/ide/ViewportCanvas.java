@@ -115,17 +115,15 @@ public class ViewportCanvas extends Canvas {
 						glTasks.poll().run();
 					}
 					
-					// Eger farenin odagi (focus) bu Canvas uzerindeyse, kamera hareket edebilir
-					if (hasFocus()) {
-						camera.move();
-						
-						picker.update();
-						
-						boolean isLeftDown = org.lwjgl.input.Mouse.isButtonDown(0);
-						if (isLeftDown && !wasLeftMouseDown) {
-							// Ekrana tiklandi, Raycast yap
-							scene.Entity closestHit = null;
-							float closestDist = Float.MAX_VALUE;
+					camera.move();
+					
+					picker.update();
+					
+					boolean isLeftDown = org.lwjgl.input.Mouse.isButtonDown(0);
+					if (isLeftDown && !wasLeftMouseDown) {
+						// Ekrana tiklandi, Raycast yap
+						scene.Entity closestHit = null;
+						float closestDist = Float.MAX_VALUE;
 							
 							for (scene.Entity e : scene.getAllEntities()) {
 								if (e instanceof scene.GameObject) {

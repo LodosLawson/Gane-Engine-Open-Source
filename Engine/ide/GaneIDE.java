@@ -132,8 +132,26 @@ public class GaneIDE {
 		JMenuItem exitItem = new JMenuItem("Exit");
 		exitItem.addActionListener(e -> closeIDE());
 		
+		JMenuItem exportItem = new JMenuItem("Export as Playable Game (.java)");
+		exportItem.addActionListener(e -> {
+			JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
+			chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+			chooser.setDialogTitle("Select Java Output Folder (e.g. src/gane)");
+			if (chooser.showSaveDialog(frame) == JFileChooser.APPROVE_OPTION) {
+				File folder = chooser.getSelectedFile();
+				String tempGaneFile = System.getProperty("user.dir") + "/src/res/scane/export_temp.gane";
+				File ganeDir = new File(System.getProperty("user.dir") + "/src/res/scane");
+				if (!ganeDir.exists()) ganeDir.mkdirs();
+				ide.utils.SceneSerializer.saveScene(viewport.getScene(), tempGaneFile, viewport);
+				ide.utils.GameExporter.exportGame(tempGaneFile, folder.getAbsolutePath());
+				javax.swing.JOptionPane.showMessageDialog(frame, "Oyun kodlari su klasore cikarildi:\n" + folder.getAbsolutePath() + "\nArtik MyGameLauncher.java uzerinden oyunu baslatabilirsiniz.");
+			}
+		});
+		
 		fileMenu.add(saveItem);
 		fileMenu.add(loadItem);
+		fileMenu.addSeparator();
+		fileMenu.add(exportItem);
 		fileMenu.addSeparator();
 		fileMenu.add(exitItem);
 		

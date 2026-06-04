@@ -1,0 +1,36 @@
+{
+    "environment": {
+        "atmosphere": {"enabled": true},
+        "dayNight": {
+            "enabled": true,
+            "timeOfDay": 14.088911
+        },
+        "terrain": {
+            "octaves": 4,
+            "seed": 12345,
+            "maxHeight": 60,
+            "roughness": 0.4,
+            "scale": 300,
+            "enabled": true
+        },
+        "water": {
+            "enabled": true,
+            "height": -2
+        }
+    },
+    "entities": [{
+        "path": "src/res/DEFAULT_TREE_MODEL_S/TREE.obj",
+        "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+        },
+        "scale": 1,
+        "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+        },
+        "type": "GameObject"
+    }]
+}
