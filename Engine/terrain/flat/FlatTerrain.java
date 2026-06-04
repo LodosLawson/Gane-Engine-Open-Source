@@ -164,6 +164,14 @@ public class FlatTerrain implements ITerrain {
     protected float pOffsetX  = 0f;
     protected float pOffsetZ  = 0f;
     protected long  pSeed     = 0L;
+    
+    // Getters for SceneSerializer
+    public boolean isInfinite() { return isInfinite; }
+    public float getPMaxHeight() { return pMaxHeight; }
+    public float getPRoughness() { return pRoughness; }
+    public int getPOctaves() { return pOctaves; }
+    public float getPScale() { return pScale; }
+    public long getPSeed() { return pSeed; }
 
     // ---------------------------------------------------------------
     // CONSTRUCTOR

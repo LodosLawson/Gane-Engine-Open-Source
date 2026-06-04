@@ -114,8 +114,8 @@ public class MasterRenderer {
 		// olsun.
 		scene.updateWaterInteractions(delta);
 
-		// Dinamik olarak flora nesnelerini kamera etrafÃ„Â±nda gÃƒÂ¼ncelle
-		terrain.FloraManager.update(scene);
+		// Eski procedural cimen ve agac (Flora) uretimini kapatiyoruz
+		// terrain.FloraManager.update(scene);
 
 		// GÃƒÂ¶lgeleri ÃƒÂ§iz (Shadow Pass)
 		shadowMapRenderer.render(scene, scene.getCamera());

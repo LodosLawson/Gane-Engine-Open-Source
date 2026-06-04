@@ -271,20 +271,14 @@ public class Camera implements ICamera {
 	}
 
 	private void moveEditor() {
-		// Editör modunda sadece SHIFT tuşuna basılıyken kamera hareket edebilir.
-		// SHIFT tuşuna basılı değilse kamera sabit kalır (Kullanıcı objeleri
-		// seçebilir).
-		if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
-
-			// Fareye basılıyken bakış açısını (pitch, yaw) değiştir
-			if (Mouse.isButtonDown(0) || Mouse.isButtonDown(1) || Mouse.isButtonDown(2)) {
-				pitch -= Mouse.getDY() * 0.2f;
-				yaw += Mouse.getDX() * 0.2f;
-			}
-			if (pitch < -90)
-				pitch = -90;
-			if (pitch > 90)
-				pitch = 90;
+		// Editör modunda sadece Sağ Tık (1) basılıyken kamera hareket edebilir.
+		if (Mouse.isButtonDown(1)) {
+			// Bakış açısını (pitch, yaw) değiştir
+			pitch -= Mouse.getDY() * 0.2f;
+			yaw += Mouse.getDX() * 0.2f;
+			
+			if (pitch < -90) pitch = -90;
+			if (pitch > 90) pitch = 90;
 			yaw %= 360;
 
 			float speed = 0.5f;
@@ -395,6 +389,10 @@ public class Camera implements ICamera {
 	 * 
 	 * @return Oluşturulan perspektif matrisi.
 	 */
+	public Matrix4f getProjectionMatrix() {
+		return projectionMatrix;
+	}
+
 	private Matrix4f createProjectionMatrix() {
 		Matrix4f projectionMatrix = new Matrix4f();
 		float aspectRatio = (float) Display.getWidth() / (float) Display.getHeight();

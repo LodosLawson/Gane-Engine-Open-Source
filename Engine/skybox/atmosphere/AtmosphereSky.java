@@ -319,6 +319,14 @@ public class AtmosphereSky implements ISky {
 	public void setPlanetaryMode(boolean b)     { planetaryMode = b; }
 	public boolean isPlanetaryMode()            { return planetaryMode; }
 
+	private float fogDensity = 0.0f;
+	public float getFogDensity() { return fogDensity; }
+	public void setFogDensity(float d) { this.fogDensity = d; }
+
+	private Vector3f fogColor = new Vector3f(1, 1, 1);
+	public Vector3f getFogColor() { return fogColor; }
+	public void setFogColor(Vector3f c) { this.fogColor = c; }
+
 	@Override
 	public void cleanUp() {
 		// Atmosfer modeli sadece matematiksel

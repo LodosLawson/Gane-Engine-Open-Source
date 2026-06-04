@@ -28,6 +28,13 @@ public class DisplayManager {
 	private static long lastFrameTime;
 	// İki kare arasında geçen süre (Delta Time - Saniye cinsinden)
 	private static float delta;
+	
+	// IDE (Editor) icine gomulmek istenirse kullanilacak Canvas
+	private static java.awt.Canvas parentCanvas = null;
+	
+	public static void setParent(java.awt.Canvas canvas) {
+		parentCanvas = canvas;
+	}
 
 	/**
 	 * OpenGL penceresini belirtilen özelliklerde oluşturur.
@@ -43,18 +50,26 @@ public class DisplayManager {
 			String title = gane.AppSettings.title;
 			String logoPath = gane.AppSettings.logoPath;
 
-			if (fullscreen) {
+			if (fullscreen && parentCanvas == null) {
 				Display.setDisplayMode(Display.getDesktopDisplayMode());
 				Display.setFullscreen(true);
 			} else {
-				Display.setDisplayMode(new DisplayMode(width, height));
+				if (parentCanvas == null) {
+					Display.setDisplayMode(new DisplayMode(width, height));
+				}
 				Display.setFullscreen(false);
+			}
+
+			if (parentCanvas != null) {
+				Display.setParent(parentCanvas);
 			}
 
 			// Depth buffer bit derinliği 24 ve Antialiasing (Multisample) seviyesi 4 olarak
 			// ayarlanır
 			Display.create(new PixelFormat().withDepthBits(24).withSamples(4));
-			Display.setTitle(title);
+			if (parentCanvas == null) {
+				Display.setTitle(title);
+			}
 			// Eğer geliştirici özel bir logo/ikon yolu belirttiyse yükle
 			if (logoPath != null && !logoPath.isEmpty()) {
 				setWindowIcon(logoPath);

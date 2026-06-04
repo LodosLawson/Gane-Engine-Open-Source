@@ -3,6 +3,7 @@ package gane;
 import org.lwjgl.opengl.Display;
 import renderEngine.RenderEngine;
 import utils.NativeLibraryLoader;
+import terrain.FloraManager;
 
 /**
  * Gane Engine Ana Çalıştırıcı Sınıfı (Barebones).
@@ -32,7 +33,7 @@ public class MainApp {
 		NativeLibraryLoader.loadNativeLibraries();
 
 		// Oyun pencere ayarlarını başlat
-		AppSettings.setup(1980, 1080, false, "Gane Engine 3D Scene", null);
+		AppSettings.setup(1720, 1080, false, "Gane Engine 3D Scene", null);
 
 		running = true;
 
@@ -47,15 +48,25 @@ public class MainApp {
 
 		// 2. Sahne (Scene) Oluştur
 		scene.Scene scene = new scene.Scene(camera);
+		scene.setAmbientLight(0.2f);
+		scene.setLightBrightness(1.4f);
+		scene.setLightDirection(new org.lwjgl.util.vector.Vector3f(0.5f, -1.0f, 0.5f));
 
 		// 3. Atmosfer
 		skybox.atmosphere.AtmosphereSky atmoSky = new skybox.atmosphere.AtmosphereSky();
+
+		// Agresif FPS Optimizasyonu: Sis (Fog) ile uzak çizimleri maskele
+		scene.setFogDensity(1.5f); // Sis daha geniş bir alana yayılacak
+		scene.setFogStart(30.0f); // Sis 30. birimden başlayıp etrafı kaplayacak
+		scene.setFogColor(new org.lwjgl.util.vector.Vector3f(0.7f, 0.75f, 0.8f)); // Sisi biraz daha beyaz/açık yapalım
+																					// ki belirgin olsun
 		scene.setSky(atmoSky);
 
 		// 4. Gece/Gündüz Sistemi (Güneş yönetimi)
 		// Başlangıç saati: 12.0f (Öğlen), Çarpan: 600.0f (Hızlı geçiş, önceden 100.0f
-		// idi)
-		environment.DayNightManager dayNight = new environment.DayNightManager(scene, 12.0f, 600.0f);
+		// Başlangıç saati: 12.0f (Öğlen), Çarpan: 0.0f (Zamanı durdurduk ki gölgeler
+		// uzamasın)
+		environment.DayNightManager dayNight = new environment.DayNightManager(scene, 12.0f, 0.0f);
 
 		// 5. Arazi (Infinite FlatTerrain)
 		// Optimizasyon: FPS dususunu (fill rate) engellemek icin terrain boyutu 2000'e
@@ -68,8 +79,8 @@ public class MainApp {
 		scene.addTerrain(terrain);
 
 		// Rendering sinirini gizlemek icin sis (fog) ayarlarini yapilandir:
-		scene.setFogStart(800f);
-		scene.setFogDensity(1.1f);
+		scene.setFogStart(200f);
+		scene.setFogDensity(1.5f);
 
 		// 6. Okyanus (Infinite Water)
 		// We set a very large size so the ocean appears infinite
@@ -77,16 +88,16 @@ public class MainApp {
 		scene.addWater(ocean);
 
 		// Kuş dönüş (rotation) offsetlerini live (canlı) değiştirmek için değişkenler
-		float currentBirdYawOffset = 270.0f; // 0.0f yaparsanız kuşlar ters/yan uçar. Blender modelleri için 180 olması
-												// gerekir!
-		float currentBirdPitchOffset = -90.0f;
-		float currentBirdRollOffset = 0.0f; // Sıfırlandı, yan yatmayı önlemek için.
+		float currentBirdYawOffset = -10.0f;
+		float currentBirdPitchOffset = 290.0f;
+		float currentBirdRollOffset = -90.0f;
 
 		// GLB Test Object (Bird)
 		scene.GameObject bird = new scene.GameObject("res/DEFAULT_BIRD/DEF_BIRD.glb", "res/DEFAULT_BIRD/texture_0.png");
 		bird.getPosition().set(0, 0, 0); // Kuşu kameranın önüne koy
 		bird.setScale(0.5f); // Kuşu daha görünür olması için 2.5 kata çıkardık
-		default_controls.BirdPlayerController birdController = new default_controls.BirdPlayerController(camera, terrain);
+		default_controls.BirdPlayerController birdController = new default_controls.BirdPlayerController(camera,
+				terrain);
 		birdController.setModelYawOffset(currentBirdYawOffset);
 		birdController.setModelPitchOffset(currentBirdPitchOffset);
 		birdController.setModelRollOffset(currentBirdRollOffset);
@@ -98,33 +109,151 @@ public class MainApp {
 
 		// Yapay Zekalı Diğer Kuşları Ekle (AI Birds)
 		java.util.Random rand = new java.util.Random();
-		for (int i = 0; i < 40; i++) {
-			scene.GameObject aiBird = new scene.GameObject("res/DEFAULT_BIRD/DEF_BIRD.glb",
-					"res/DEFAULT_BIRD/texture_0.png");
-			// Geniş bir alana (2000x2000) değil, oyuncunun 200 birim yakınına dağıt
-			float startX = 64.0f + (rand.nextFloat() * 400f - 200f);
-			float startZ = 64.0f + (rand.nextFloat() * 400f - 200f);
-			float startY = terrain.getHeightAt(startX, startZ) + 30f + rand.nextFloat() * 60f;
-
-			aiBird.getPosition().set(startX, startY, startZ);
-			aiBird.setScale(2.0f + rand.nextFloat() * 1.5f); // Kuş boyutları 2.0 ile 3.5 arası rastgele olsun
-
-			default_controls.BirdAIController aiController = new default_controls.BirdAIController(terrain);
-			aiController.setModelYawOffset(currentBirdYawOffset);
-			aiController.setModelPitchOffset(currentBirdPitchOffset);
-			aiController.setModelRollOffset(currentBirdRollOffset);
-			aiBird.addComponent(aiController);
-
-			scene.addEntity(aiBird);
-		}
+		/*
+		 * for (int i = 0; i < 40; i++) {
+		 * scene.GameObject aiBird = new
+		 * scene.GameObject("res/DEFAULT_BIRD/DEF_BIRD.glb",
+		 * "res/DEFAULT_BIRD/texture_0.png");
+		 * // Geniş bir alana (2000x2000) değil, oyuncunun 200 birim yakınına dağıt
+		 * float startX = 64.0f + (rand.nextFloat() * 400f - 200f);
+		 * float startZ = 64.0f + (rand.nextFloat() * 400f - 200f);
+		 * float startY = terrain.getHeightAt(startX, startZ) + 30f + rand.nextFloat() *
+		 * 60f;
+		 * 
+		 * aiBird.getPosition().set(startX, startY, startZ);
+		 * aiBird.setScale(2.0f + rand.nextFloat() * 1.5f); // Kuş boyutları 2.0 ile 3.5
+		 * arası rastgele olsun
+		 * 
+		 * default_controls.BirdAIController aiController = new
+		 * default_controls.BirdAIController(terrain);
+		 * aiController.setModelYawOffset(currentBirdYawOffset);
+		 * aiController.setModelPitchOffset(currentBirdPitchOffset);
+		 * aiController.setModelRollOffset(currentBirdRollOffset);
+		 * aiBird.addComponent(aiController);
+		 * 
+		 * scene.addEntity(aiBird);
+		 * }
+		 */
 
 		// 7. Atmosfer bulutları aktiftir (AtmosphereSky varsayılan olarak cloudsEnabled
-		// = true)
-		atmoSky.setCloudsEnabled(true);
+		// Bulut golgeleri kafa karistirdigi (sanki gorunmez bir obje golge yapiyormus
+		// hissi verdigi) icin simdilik kapatiyoruz
+		atmoSky.setCloudsEnabled(false);
 
-		// 8. Ağaçlar ve Çimenler (Flora) otomatik olarak FloraManager tarafından
-		// üretilecektir.
-		// Eski statik üretim kodları kaldırıldı.
+		// Sadece Mighty Oak agac paketi yukleniyor
+		scene.GameObject floraPack = new scene.GameObject("src/res/DEFAULTTREES/mighty_oak_trees.glb");
+
+		// Yard Grass çimen paketi yükleniyor
+		scene.GameObject grassPack = new scene.GameObject("src/res/DEFAULTTREES/yard_grass.glb");
+
+		java.util.List<java.util.List<scene.GameObject>> treeTemplates = new java.util.ArrayList<>();
+		java.util.List<java.util.List<scene.GameObject>> grassTemplates = new java.util.ArrayList<>();
+		java.util.List<java.util.List<scene.GameObject>> bushTemplates = new java.util.ArrayList<>();
+
+		if (floraPack.getMultiMeshParts() != null) {
+			java.util.List<scene.GameObject> parts = floraPack.getMultiMeshParts();
+
+			if (parts.size() == 13) { // mighty_oak_trees.glb icin ozel gruplama
+				// Agac 1: Govde (0) + Yapraklar (1,2,3,4)
+				java.util.List<scene.GameObject> group1 = new java.util.ArrayList<>();
+				group1.add(parts.get(0));
+				group1.add(parts.get(1));
+				group1.add(parts.get(2));
+				group1.add(parts.get(3));
+				group1.add(parts.get(4));
+				treeTemplates.add(group1);
+
+				// Agac 2: Govde (5) + Yapraklar (6,7)
+				java.util.List<scene.GameObject> group2 = new java.util.ArrayList<>();
+				group2.add(parts.get(5));
+				group2.add(parts.get(6));
+				group2.add(parts.get(7));
+				treeTemplates.add(group2);
+
+				// Agac 3: Govde (8) + Yapraklar (9,10,11,12)
+				java.util.List<scene.GameObject> group3 = new java.util.ArrayList<>();
+				group3.add(parts.get(8));
+				group3.add(parts.get(9));
+				group3.add(parts.get(10));
+				group3.add(parts.get(11));
+				group3.add(parts.get(12));
+				treeTemplates.add(group3);
+			} else {
+				// Diger paketler icin standart ikili gruplama
+				for (int i = 0; i < parts.size(); i += 2) {
+					java.util.List<scene.GameObject> group = new java.util.ArrayList<>();
+					group.add(parts.get(i));
+					if (i + 1 < parts.size()) {
+						group.add(parts.get(i + 1));
+					}
+					treeTemplates.add(group);
+				}
+			}
+		}
+
+		// Tum agac gruplari icin BaseOffset (Merkez/Zemin) Hesaplamasi Kaldirildi.
+		// Profesyonel agac modelleri zaten (0,0,0) noktasini kok olarak ayarlar.
+		// Bounding box (cerceve) merkezi hesaplamak, asimetrik dallar yuzunden kokleri
+		// yana kaydiriyordu.
+
+		java.util.List<scene.GameObject> allParts = new java.util.ArrayList<>();
+		if (grassPack.getMultiMeshParts() != null && !grassPack.getMultiMeshParts().isEmpty()) {
+			allParts.addAll(grassPack.getMultiMeshParts());
+		} else {
+			allParts.add(grassPack);
+		}
+		// Eger gelecekte baska bir sey yuklemek isterseniz buraya ekleyebilirsiniz.
+		for (scene.GameObject part : allParts) {
+			String partName = "Unknown";
+			if (part.getModel() != null && part.getModel().getModelData() != null
+					&& part.getModel().getModelData().getName() != null) {
+				partName = part.getModel().getModelData().getName().toLowerCase();
+			}
+
+			// İstenmeyen kelimeleri içeren meshleri filtrele
+			if (partName.contains("rock") || partName.contains("road") || partName.contains("fence") ||
+					partName.contains("dirt") || partName.contains("cobblestone") || partName.contains("cliff") ||
+					partName.contains("puddle") || partName.contains("pile") || partName.contains("terrain")) {
+				continue;
+			}
+
+			// Çimenler (Yard grass dosyasından gelen tüm parçalar çimen kabul ediliyor)
+			boolean isYardGrass = (grassPack.getMultiMeshParts() != null
+					&& grassPack.getMultiMeshParts().contains(part)) || part == grassPack;
+			if (isYardGrass || partName.contains("grass") || partName.contains("cimen")) {
+				java.util.List<scene.GameObject> grassGroup = new java.util.ArrayList<>();
+				grassGroup.add(part);
+				grassTemplates.add(grassGroup);
+				continue;
+			}
+
+			// Çalılar
+			if (partName.contains("bush") || partName.contains("plant") || partName.contains("leaf")
+					|| partName.contains("leaves")) {
+				objConverter.ModelData md = part.getModel().getModelData();
+				if (md != null) {
+					float rawCenterX = (md.getMinX() + md.getMaxX()) / 2.0f;
+					float rawCenterY = (md.getMinY() + md.getMaxY()) / 2.0f;
+					float rawMinZ = md.getMinZ();
+					part.getBaseOffset().set(-rawCenterX, -rawCenterY, -rawMinZ);
+				}
+				java.util.List<scene.GameObject> bushGroup = new java.util.ArrayList<>();
+				bushGroup.add(part);
+				bushTemplates.add(bushGroup);
+				continue;
+			}
+
+		}
+
+		// Eski cimen kaldirildi.
+
+		System.out.println("Kategorize edildi: " + treeTemplates.size() + " Agac, " + grassTemplates.size() + " Cimen, "
+				+ bushTemplates.size() + " Cali sablonu bulundu.");
+
+		// Infinite Terrain ve Flora Manager Kurulumu
+		terrain.setInfinite(true);
+		FloraManager.setTemplates(treeTemplates, grassTemplates, bushTemplates);
+		System.out.println("FloraManager infinite mode icin ayarlandi.");
 
 		// 9. UI ve FPS çizimi için OpenglYaziCizimi
 		guiRendering.OpenglYaziCizimi uiText = new guiRendering.OpenglYaziCizimi();
@@ -142,43 +271,56 @@ public class MainApp {
 		// parça halinde render edilecektir.
 		scene.GameObject ship = new scene.GameObject("res/DEFAULT_VEC_SHIP/fishing_boat_v.glb");
 		ship.getPosition().set(0, 5.0f, 30); // Gemiyi tam gözümüzün önüne, kuşun 30 birim uzağına koyalım
-		ship.getRotation().set(-90, 0, 0); // Geminin burnu suya batık olmaması için düzeltildi
+		ship.getRotation().set(0, 0, 0); // GLB rotasyonu artık Entity seviyesinde çözülüyor
 		ship.setScale(1.0f); // Boyutu sıfırladık
 		ship.setCullingRadius(50000.0f);
-
+		
 		default_controls.ShipController shipController = new default_controls.ShipController(camera, terrain);
 		ship.addComponent(shipController);
 		ship.getPosition().set(-15, 0, 0);
 		scene.addEntity(ship);
+		shipController.setActive(false); // Başlangıçta kuş aktif olsun
+		
+		/*
+		 * // 12. Balık Ekleme (Koi Fish) - Tekil Balık (Oyuncu Kontrollü)
+		 * scene.GameObject fish = new
+		 * scene.GameObject("res/DEFAULT_FISH/koi_fish.glb");
+		 * fish.getPosition().set(-10, 2.0f, 0); // Geminin hemen yanına
+		 * fish.setScale(0.5f); // Balık boyutunu ayarlayalım
+		 * fish.setCullingRadius(5000.0f);
+		 * default_controls.FishPlayerController fishPlayerController = new
+		 * default_controls.FishPlayerController(camera);
+		 * fish.addComponent(fishPlayerController);
+		 * scene.addEntity(fish);
+		 * 
+		 * // Başlangıç Aktiflikleri
+		 * shipController.setActive(false);
+		 * fishPlayerController.setActive(false);
+		 * 
+		 * // Sürü Halinde Balıklar (School of Fishes)
+		 * for (int i = 0; i < 30; i++) {
+		 * scene.GameObject aiFish = new
+		 * scene.GameObject("res/DEFAULT_FISH/koi_fish.glb");
+		 * // Geminin etrafına (100 birim yarıçaplı alana) rastgele dağıt
+		 * float fStartX = ship.getPosition().x + (rand.nextFloat() * 200f - 100f);
+		 * float fStartZ = ship.getPosition().z + (rand.nextFloat() * 200f - 100f);
+		 * 
+		 * aiFish.getPosition().set(fStartX, 2.0f, fStartZ);
+		 * aiFish.setScale(0.3f + rand.nextFloat() * 0.4f); // 0.3 - 0.7 arası rastgele
+		 * boyut
+		 * aiFish.setCullingRadius(5000.0f);
+		 * 
+		 * default_controls.FishController aiFishController = new
+		 * default_controls.FishController();
+		 * aiFish.addComponent(aiFishController);
+		 * 
+		 * scene.addEntity(aiFish);
+		 * }
+		 */
+		birdController.setActive(true);
 
-		// 12. Balık Ekleme (Koi Fish) - Tekil Balık (Oyuncu Kontrollü)
-		scene.GameObject fish = new scene.GameObject("res/DEFAULT_FISH/koi_fish.glb");
-		fish.getPosition().set(-10, 2.0f, 0); // Geminin hemen yanına
-		fish.setScale(0.5f); // Balık boyutunu ayarlayalım
-		fish.setCullingRadius(5000.0f);
-		default_controls.FishPlayerController fishPlayerController = new default_controls.FishPlayerController(camera);
-		fish.addComponent(fishPlayerController);
-		scene.addEntity(fish);
-
-		// Sürü Halinde Balıklar (School of Fishes)
-		for (int i = 0; i < 30; i++) {
-			scene.GameObject aiFish = new scene.GameObject("res/DEFAULT_FISH/koi_fish.glb");
-			// Geminin etrafına (100 birim yarıçaplı alana) rastgele dağıt
-			float fStartX = ship.getPosition().x + (rand.nextFloat() * 200f - 100f);
-			float fStartZ = ship.getPosition().z + (rand.nextFloat() * 200f - 100f);
-			
-			aiFish.getPosition().set(fStartX, 2.0f, fStartZ); 
-			aiFish.setScale(0.3f + rand.nextFloat() * 0.4f); // 0.3 - 0.7 arası rastgele boyut
-			aiFish.setCullingRadius(5000.0f);
-			
-			default_controls.FishController aiFishController = new default_controls.FishController();
-			aiFish.addComponent(aiFishController);
-			
-			scene.addEntity(aiFish);
-		}
-
-		// Kameranın başlangıçta gemiye odaklanmasını sağla
-		camera.setTarget(ship);
+		// Kameranın başlangıçta kuşa odaklanmasını sağla
+		camera.setTarget(bird);
 
 		long lastTime = System.nanoTime();
 
@@ -208,6 +350,10 @@ public class MainApp {
 		boolean xKeyPressed = false;
 		float savedTimeMultiplier = dayNight.getTimeMultiplier();
 		boolean timePaused = false;
+
+		// UI Gizleme Kontrolü
+		boolean showUI = true;
+		boolean hKeyPressed = false;
 
 		// Ana oyun döngüsü
 		while (running && !Display.isCloseRequested()) {
@@ -251,24 +397,17 @@ public class MainApp {
 						camera.setMode(extra.Camera.CameraMode.FIRST_PERSON);
 						camera.setTarget(player);
 						currentModeStr = "FIRST PERSON (KUS)";
+						birdController.setActive(true);
 					} else if (camera.getMode() == extra.Camera.CameraMode.FIRST_PERSON) {
 						camera.setMode(extra.Camera.CameraMode.RPG_THIRD_PERSON);
 						camera.setTarget(player);
 						currentModeStr = "THIRD PERSON (KUS)";
-					} else if (camera.getMode() == extra.Camera.CameraMode.RPG_THIRD_PERSON
-							&& camera.getTarget() == player) {
-						camera.setMode(extra.Camera.CameraMode.RPG_THIRD_PERSON);
-						camera.setTarget(ship);
-						currentModeStr = "THIRD PERSON (GEMI)";
-					} else if (camera.getMode() == extra.Camera.CameraMode.RPG_THIRD_PERSON
-							&& camera.getTarget() == ship) {
-						camera.setMode(extra.Camera.CameraMode.RPG_THIRD_PERSON);
-						camera.setTarget(fish);
-						currentModeStr = "THIRD PERSON (BALIK)";
+						birdController.setActive(true);
 					} else {
 						camera.setMode(extra.Camera.CameraMode.FREE);
 						camera.setTarget(null);
 						currentModeStr = "FREE";
+						birdController.setActive(false);
 					}
 				}
 			} else {
@@ -279,6 +418,9 @@ public class MainApp {
 			for (int i = 0; i < scene.getAllEntities().size(); i++) {
 				scene.getAllEntities().get(i).update(delta);
 			}
+
+			// Chunk tabanli Flora uretimini ve Culling sistemini guncelle
+			FloraManager.update(scene);
 
 			// --- ARAZİ VE OKYANUS KONTROLLERİ ---
 			// Arazi Poligon Sayısı (O Tuşu - Toggle)
@@ -339,7 +481,8 @@ public class MainApp {
 			if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_X)) {
 				if (!xKeyPressed) {
 					xKeyPressed = true;
-					postProcessing.PostProcessing.RenderMode[] modes = postProcessing.PostProcessing.RenderMode.values();
+					postProcessing.PostProcessing.RenderMode[] modes = postProcessing.PostProcessing.RenderMode
+							.values();
 					int nextOrdinal = (postProcessing.PostProcessing.currentRenderMode.ordinal() + 1) % modes.length;
 					postProcessing.PostProcessing.currentRenderMode = modes[nextOrdinal];
 				}
@@ -361,6 +504,16 @@ public class MainApp {
 				}
 			} else {
 				pKeyPressed = false;
+			}
+
+			// UI Gizle / Göster (H Tuşu)
+			if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_H)) {
+				if (!hKeyPressed) {
+					showUI = !showUI;
+					hKeyPressed = true;
+				}
+			} else {
+				hKeyPressed = false;
 			}
 
 			// Hızlandır / Yavaşlat (Yukarı / Aşağı Ok Tuşları)
@@ -470,7 +623,8 @@ public class MainApp {
 			// Apply new offsets to AI birds
 			for (scene.Entity ent : scene.getAllEntities()) {
 				if (ent instanceof scene.GameObject) {
-					default_controls.BirdAIController aiC = ((scene.GameObject) ent).getComponent(default_controls.BirdAIController.class);
+					default_controls.BirdAIController aiC = ((scene.GameObject) ent)
+							.getComponent(default_controls.BirdAIController.class);
 					if (aiC != null) {
 						aiC.setModelPitchOffset(currentBirdPitchOffset);
 						aiC.setModelYawOffset(currentBirdYawOffset);
@@ -489,43 +643,57 @@ public class MainApp {
 			renderEngine.renderScene(scene, delta);
 
 			// Ekranı güncellemeden hemen önce UI (Yazı) çiz
-			uiText.beginUI();
-			uiText.drawText("FPS: " + currentFps + " | FOV: " + (int) camera.getFOV() + " | POV: " + currentModeStr, 20,
-					20, java.awt.Color.WHITE);
-			uiText.drawText("POV Degistir: [V] | Render Modu [X]: " + postProcessing.PostProcessing.currentRenderMode.name(), 20, 50, java.awt.Color.LIGHT_GRAY);
+			if (showUI) {
+				uiText.beginUI();
+				uiText.drawText("FPS: " + currentFps + " | FOV: " + (int) camera.getFOV() + " | POV: " + currentModeStr,
+						20,
+						20, java.awt.Color.WHITE);
+				uiText.drawText(
+						"POV Degistir: [V] | Render Modu [X]: "
+								+ postProcessing.PostProcessing.currentRenderMode.name(),
+						20, 50, java.awt.Color.LIGHT_GRAY);
 
-			// Yeni kontrolleri ekrana yazdır:
-			uiText.drawText("Arazi Kalitesi/Poligon (Grid) [O, [, ] ]: " + terrainGridCount + "x" + terrainGridCount,
-					20, 80, java.awt.Color.YELLOW);
-			uiText.drawText(
-					"Kus Offset (Canli Test) -> Pitch(F1/F2): " + currentBirdPitchOffset + " | Yaw(F3/F4): "
-							+ currentBirdYawOffset + " | Roll(F5/F6): " + currentBirdRollOffset,
-					20, 110, java.awt.Color.ORANGE);
-			uiText.drawText("Okyanus Doku Boyutu [N / M]: " + String.format("%.2f", oceanTexScale), 20, 140,
-					java.awt.Color.CYAN);
+				// Yeni kontrolleri ekrana yazdır:
+				uiText.drawText(
+						"Arazi Kalitesi/Poligon (Grid) [O, [, ] ]: " + terrainGridCount + "x" + terrainGridCount,
+						20, 80, java.awt.Color.YELLOW);
+				uiText.drawText(
+						"Kus Offset (Canli Test) -> Pitch(F1/F2): " + currentBirdPitchOffset + " | Yaw(F3/F4): "
+								+ currentBirdYawOffset + " | Roll(F5/F6): " + currentBirdRollOffset,
+						20, 110, java.awt.Color.ORANGE);
+				uiText.drawText("Okyanus Doku Boyutu [N / M]: " + String.format("%.2f", oceanTexScale), 20, 140,
+						java.awt.Color.CYAN);
 
-			// Gemi Scale ayarlama
-			if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_8)) {
-				ship.setScale(ship.getScale() + 5.0f * delta * ship.getScale());
+				// Gemi Scale ayarlama
+				/*
+				 * if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_8)) {
+				 * ship.setScale(ship.getScale() + 5.0f * delta * ship.getScale());
+				 * }
+				 * if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_2)) {
+				 * ship.setScale(Math.max(0.0001f, ship.getScale() - 5.0f * delta *
+				 * ship.getScale()));
+				 * }
+				 */
+
+				// Zaman bilgileri UI
+				String timeStr = String.format("%.1f", dayNight.getTimeOfDay());
+				String speedStr = timePaused ? "DURDURULDU" : String.format("%.0fx", dayNight.getTimeMultiplier());
+				uiText.drawText(
+						"Saat [Sol/Sag]: " + timeStr + " | Zaman Hizi [Yukari/Asagi]: " + speedStr + " | Durdur [P]",
+						20,
+						170, java.awt.Color.GREEN);
+
+				String orbitStr = String.format("%.0f", dayNight.getSunOrbitYaw());
+				uiText.drawText("Gunes Rotasyonu [U/I]: " + orbitStr + " derece", 20, 200, java.awt.Color.ORANGE);
+
+				/*
+				 * uiText.drawText("Gemi Scale [8 / 2]: " + String.format("%.4f",
+				 * ship.getScale()) + " | Yukseklik [J / K]",
+				 * 20, 230, java.awt.Color.MAGENTA);
+				 */
+
+				uiText.endUI();
 			}
-			if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_2)) {
-				ship.setScale(Math.max(0.0001f, ship.getScale() - 5.0f * delta * ship.getScale()));
-			}
-
-			// Zaman bilgileri UI
-			String timeStr = String.format("%.1f", dayNight.getTimeOfDay());
-			String speedStr = timePaused ? "DURDURULDU" : String.format("%.0fx", dayNight.getTimeMultiplier());
-			uiText.drawText(
-					"Saat [Sol/Sag]: " + timeStr + " | Zaman Hizi [Yukari/Asagi]: " + speedStr + " | Durdur [P]", 20,
-					170, java.awt.Color.GREEN);
-
-			String orbitStr = String.format("%.0f", dayNight.getSunOrbitYaw());
-			uiText.drawText("Gunes Rotasyonu [U/I]: " + orbitStr + " derece", 20, 200, java.awt.Color.ORANGE);
-
-			uiText.drawText("Gemi Scale [8 / 2]: " + String.format("%.4f", ship.getScale()) + " | Yukseklik [J / K]",
-					20, 230, java.awt.Color.MAGENTA);
-
-			uiText.endUI();
 
 			// Ekranı güncelle
 			renderEngine.update();

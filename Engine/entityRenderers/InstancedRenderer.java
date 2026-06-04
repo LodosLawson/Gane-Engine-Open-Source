@@ -59,6 +59,10 @@ public class InstancedRenderer {
 		shader.lightBrightness.loadFloat(scene.getLightBrightness());
 		shader.ambientLight.loadFloat(scene.getAmbientLight());
 		
+		shader.uFogColor.loadVec3(scene.getFogColor());
+		shader.uFogDensity.loadFloat(scene.getFogDensity());
+		shader.uFogStart.loadFloat(scene.getFogStart());
+		
 		scene.Light pointLight = scene.getPointLight();
 		if (pointLight != null) {
 			shader.pointLightPos.loadVec3(pointLight.getPosition());

@@ -22,10 +22,10 @@ public class DayNightManager {
     private Vector3f sunsetLightColor = new Vector3f(1.0f, 0.5f, 0.2f); // GÃ¼n BatÄ±mÄ±/DoÄŸumu IÅŸÄ±ÄŸÄ±
     private Vector3f nightLightColor = new Vector3f(0.3f, 0.4f, 0.55f); // Gece AyÄ±ÅŸÄ±ÄŸÄ± (YÄ±ldÄ±z aydÄ±nlatmasÄ± eklendi)
     
-    // --- Sis (Fog) Paletleri ---
-    private Vector3f dayFogColor = new Vector3f(0.72f, 0.82f, 0.92f);
-    private Vector3f sunsetFogColor = new Vector3f(0.7f, 0.4f, 0.3f);
-    private Vector3f nightFogColor = new Vector3f(0.02f, 0.02f, 0.04f); // Gece karanlÄ±ÄŸÄ± sis
+    // --- Sis (Fog) Paletleri (Tamamen Nötr Pus Renkleri - Mavi Tonları Kaldırıldı) ---
+    private Vector3f dayFogColor = new Vector3f(0.6f, 0.6f, 0.62f); // Nötr açık gri pus (Mavilik yok, fazla parlak değil)
+    private Vector3f sunsetFogColor = new Vector3f(0.6f, 0.45f, 0.35f); // Gün batımı sıcak gri pus
+    private Vector3f nightFogColor = new Vector3f(0.08f, 0.08f, 0.09f); // Gece koyu gri pus
     
     private boolean planetaryMode = false;
     private Vector3f planetPosition = new Vector3f();
@@ -155,6 +155,10 @@ public class DayNightManager {
             // 1000f uzaklÄ±kta dev bir kÃ¼re gibi dÃ¼ÅŸÃ¼nelim.
             Vector3f sunPos = new Vector3f(sunDirection.x * 1000f, sunDirection.y * 1000f, sunDirection.z * 1000f);
             atmo.setSunPosition(sunPos);
+            
+            // Ufuktaki sis birleşimi için AtmosphereSky'a sis verilerini aktar:
+            atmo.setFogDensity(scene.getFogDensity()); // Sis yoğunsa güneşi gizlemek için
+            atmo.setFogColor(currentFogColor); // Ufuk çizgisini boyamak için sis rengi
         }
     }
 

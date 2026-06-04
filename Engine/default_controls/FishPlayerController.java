@@ -26,6 +26,12 @@ public class FishPlayerController extends Component {
 	private float modelYawOffset = 0.0f;
 	private float modelPitchOffset = 0.0f;
 	private float modelRollOffset = 0.0f;
+	
+	private boolean isActive = false;
+	
+	public void setActive(boolean active) {
+		this.isActive = active;
+	}
 
 	public FishPlayerController(extra.Camera camera) {
 		this.camera = camera;
@@ -42,17 +48,17 @@ public class FishPlayerController extends Component {
 		time += delta;
 
 		// Yön Kontrolü (A / D)
-		if (Keyboard.isKeyDown(Keyboard.KEY_A) || Keyboard.isKeyDown(Keyboard.KEY_LEFT)) {
+		if (isActive && (Keyboard.isKeyDown(Keyboard.KEY_A) || Keyboard.isKeyDown(Keyboard.KEY_LEFT))) {
 			gameObject.getRotation().y += turnSpeed * delta;
-		} else if (Keyboard.isKeyDown(Keyboard.KEY_D) || Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) {
+		} else if (isActive && (Keyboard.isKeyDown(Keyboard.KEY_D) || Keyboard.isKeyDown(Keyboard.KEY_RIGHT))) {
 			gameObject.getRotation().y -= turnSpeed * delta;
 		}
 
 		// Hız Kontrolü (W / S)
 		float targetSpeed = 0.0f;
-		if (Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_UP)) {
+		if (isActive && (Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_UP))) {
 			targetSpeed = speed;
-		} else if (Keyboard.isKeyDown(Keyboard.KEY_S) || Keyboard.isKeyDown(Keyboard.KEY_DOWN)) {
+		} else if (isActive && (Keyboard.isKeyDown(Keyboard.KEY_S) || Keyboard.isKeyDown(Keyboard.KEY_DOWN))) {
 			targetSpeed = -speed * 0.5f;
 		}
 		
@@ -63,10 +69,10 @@ public class FishPlayerController extends Component {
 		}
 
 		// Derinlik Kontrolü (SPACE yüzeye çık, SHIFT dibe in)
-		if (Keyboard.isKeyDown(Keyboard.KEY_SPACE)) {
+		if (isActive && Keyboard.isKeyDown(Keyboard.KEY_SPACE)) {
 			currentDepth -= 15.0f * delta; // Yüksel
 		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
+		if (isActive && Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
 			currentDepth += 15.0f * delta; // Alçal
 		}
 		
@@ -95,9 +101,9 @@ public class FishPlayerController extends Component {
 		
 		// Dönüşlerde yana yatma (Roll)
 		float targetRoll = 0.0f;
-		if (Keyboard.isKeyDown(Keyboard.KEY_A) || Keyboard.isKeyDown(Keyboard.KEY_LEFT)) {
+		if (isActive && (Keyboard.isKeyDown(Keyboard.KEY_A) || Keyboard.isKeyDown(Keyboard.KEY_LEFT))) {
 			targetRoll = -20.0f;
-		} else if (Keyboard.isKeyDown(Keyboard.KEY_D) || Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) {
+		} else if (isActive && (Keyboard.isKeyDown(Keyboard.KEY_D) || Keyboard.isKeyDown(Keyboard.KEY_RIGHT))) {
 			targetRoll = 20.0f;
 		}
 		// Roll değerini yumuşak şekilde uygula

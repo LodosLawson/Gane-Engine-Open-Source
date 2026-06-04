@@ -19,6 +19,10 @@ public class Entity {
 	private final Vector3f rotation = new Vector3f(0, 0, 0);
 	// Objenin ölçek çarpanı (Boyutu)
 	private float scale = 1.0f;
+	// Modelin kendi eksenindeki varsayılan düzeltme rotasyonu (GLB dosyalarındaki Z-up to Y-up düzeltmesi için)
+	private final Vector3f modelOffsetRot = new Vector3f(0, 0, 0);
+	// Modelin merkez pivotunu ve taban noktasını sıfırlamak için kullanılan raw offset
+	private final Vector3f baseOffset = new Vector3f(0, 0, 0);
 	// Frustum Culling için objenin kapsama yarıçapı
 	private float cullingRadius = 10.0f;
 	
@@ -107,6 +111,14 @@ public class Entity {
 	 */
 	public void setRotation(Vector3f rotation) {
 		this.rotation.set(rotation);
+	}
+
+	public Vector3f getModelOffsetRot() {
+		return modelOffsetRot;
+	}
+
+	public Vector3f getBaseOffset() {
+		return baseOffset;
 	}
 
 	/** @return Objenin ölçek çarpanını (Boyutunu) döndürür */

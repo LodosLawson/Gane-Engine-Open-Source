@@ -35,6 +35,12 @@ public class BirdPlayerController extends Component {
 	private float currentTargetYaw = 0.0f;
 	private float currentTargetPitch = 0.0f;
 	private float currentRoll = 0.0f;
+	
+	private boolean isActive = false;
+	
+	public void setActive(boolean active) {
+		this.isActive = active;
+	}
 
 	public BirdPlayerController(Camera camera, FlatTerrain terrain) {
 		this.camera = camera;
@@ -79,15 +85,6 @@ public class BirdPlayerController extends Component {
 		if (gameObject == null)
 			return;
 
-		// Eğer FREE kamera modundaysak kuşu kontrol etme
-		if (camera.getMode() == Camera.CameraMode.FREE) {
-			scene.animation.Animator animator = gameObject.getAnimator();
-			if (animator != null) {
-				animator.pause();
-			}
-			return;
-		}
-
 		float x = gameObject.getPosition().x;
 		float y = gameObject.getPosition().y;
 		float z = gameObject.getPosition().z;
@@ -113,68 +110,79 @@ public class BirdPlayerController extends Component {
 		float moveY = 0f;
 		float moveZ = 0f;
 
-		// SHIFT tuşuna basıldığında kameranın bakış yönüne doğru uç
-		if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
+		// Havadayken her zaman hareket (süzülme) halinde olsun
+		if (!onGround) {
+			isMoving = true;
+			
+			// Kameranın yönelimlerini al
+			if (isActive) {
+				currentTargetYaw = -camera.getYaw();
+				// Kamera yukarı baktığında (negatif pitch), kuşun da yukarı bakması için yönü çeviriyoruz
+				currentTargetPitch = -camera.getPitch(); 
+			}
+
 			float yawRad = (float) Math.toRadians(camera.getYaw());
 			float pitchRad = (float) Math.toRadians(camera.getPitch());
 
-			moveX = (float) (Math.sin(yawRad) * Math.cos(pitchRad));
-			moveZ = (float) (-Math.cos(yawRad) * Math.cos(pitchRad));
-			moveY = (float) (-Math.sin(pitchRad));
+			// W, LSHIFT veya Sol Tık ile Uçuş (Hızlanma / Kanat Çırpma)
+			if (isActive && (Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_LSHIFT))) {
+				moveX = (float) (Math.sin(yawRad) * Math.cos(pitchRad));
+				moveZ = (float) (-Math.cos(yawRad) * Math.cos(pitchRad));
+				moveY = (float) (-Math.sin(pitchRad));
 
-			// Hareketi uygula
-			x += moveX * moveSpeed * delta;
-			z += moveZ * moveSpeed * delta;
-			y += moveY * moveSpeed * delta;
-			velocityY = moveY * moveSpeed; // Dikey hızı hareket hızına eşitle
+				// Hareketi uygula
+				x += moveX * moveSpeed * delta;
+				z += moveZ * moveSpeed * delta;
+				y += moveY * moveSpeed * delta;
+				velocityY = moveY * moveSpeed; // Dikey hızı hareket hızına eşitle
 
-			// Süzülme için hızı kaydet
-			currentGlideSpeedX = moveX * moveSpeed;
-			currentGlideSpeedZ = moveZ * moveSpeed;
+				// Süzülme için hızı kaydet
+				currentGlideSpeedX = moveX * moveSpeed;
+				currentGlideSpeedZ = moveZ * moveSpeed;
 
-			onGround = false;
-			isMoving = true;
-		} else {
-			// SHIFT'e basılmıyorsa...
-			if (!onGround) {
-				// Dalış (Space tuşu)
-				if (Keyboard.isKeyDown(Keyboard.KEY_SPACE)) {
-					velocityY -= 80.0f * delta; // Çok hızlı aşağı dalış
-					if (velocityY < -60.0f)
-						velocityY = -60.0f; // Limit dive speed
-					currentTargetPitch = 70.0f; // Burnu aşağı bakacak şekilde dal
-					isMoving = true; // Rotasyonu güncellemesine izin ver
+			} else if (isActive && Keyboard.isKeyDown(Keyboard.KEY_SPACE)) {
+				// SPACE ile Dalış
+				velocityY -= 80.0f * delta; // Hızlı düşüş
+				if (velocityY < -80.0f) velocityY = -80.0f; // Limit dive speed
+				
+				currentTargetPitch = -70.0f; // Burnu aşağı bakacak şekilde dal (Negatif = Aşağı)
 
-					// Dalış yaparken mevcut yatay momentumu koru ama yavaşça azalt
-					currentGlideSpeedX *= (1.0f - 0.5f * delta);
-					currentGlideSpeedZ *= (1.0f - 0.5f * delta);
-					x += currentGlideSpeedX * delta;
-					z += currentGlideSpeedZ * delta;
-				} else {
-					// Süzülme (Glide): Yavaş düşüş ve ileri süzülme
-					float maxGlideDropSpeed = -8.0f;
-					velocityY += glideGravity * delta;
-					if (velocityY < maxGlideDropSpeed) {
-						// Çok hızlı düşüyorsa yavaşlat (örneğin dalıştan sonra süzülmeye geçiş)
-						velocityY += (maxGlideDropSpeed - velocityY) * 3.0f * delta;
-					}
-
-					currentTargetPitch = 15.0f; // Süzülürken burnu hafif aşağı
-					isMoving = true;
-
-					// Süzülürken kameranın baktığı yöne doğru (yaw) belli bir hızda ilerle
-					float targetGlideSpeed = 22.0f;
-					float radYaw = (float) Math.toRadians(camera.getYaw());
-					float targetGlideX = (float) (Math.sin(radYaw)) * targetGlideSpeed;
-					float targetGlideZ = (float) (-Math.cos(radYaw)) * targetGlideSpeed;
-
-					currentGlideSpeedX += (targetGlideX - currentGlideSpeedX) * 2.0f * delta;
-					currentGlideSpeedZ += (targetGlideZ - currentGlideSpeedZ) * 2.0f * delta;
-
-					x += currentGlideSpeedX * delta;
-					z += currentGlideSpeedZ * delta;
-				}
+				// Dalış yaparken mevcut yatay momentumu koru ama yavaşça azalt
+				currentGlideSpeedX *= (1.0f - 0.5f * delta);
+				currentGlideSpeedZ *= (1.0f - 0.5f * delta);
+				x += currentGlideSpeedX * delta;
+				z += currentGlideSpeedZ * delta;
 				y += velocityY * delta;
+			} else {
+				// Süzülme (Glide): Kameranın baktığı yöne doğru (ama yavaşça) süzül.
+				float maxGlideDropSpeed = -10.0f;
+				velocityY += glideGravity * delta;
+				if (velocityY < maxGlideDropSpeed) {
+					// Çok hızlı düşüyorsa yavaşlat
+					velocityY += (maxGlideDropSpeed - velocityY) * 3.0f * delta;
+				}
+
+				// Süzülürken yatay olarak ilerle (momentum)
+				float targetGlideSpeed = 22.0f;
+				float targetGlideX = (float) (Math.sin(yawRad)) * targetGlideSpeed;
+				float targetGlideZ = (float) (-Math.cos(yawRad)) * targetGlideSpeed;
+
+				currentGlideSpeedX += (targetGlideX - currentGlideSpeedX) * 2.0f * delta;
+				currentGlideSpeedZ += (targetGlideZ - currentGlideSpeedZ) * 2.0f * delta;
+
+				x += currentGlideSpeedX * delta;
+				z += currentGlideSpeedZ * delta;
+				y += velocityY * delta;
+			}
+		} else {
+			// Yerdeyken
+			currentTargetPitch = 0.0f;
+			// W veya SHIFT veya SPACE'e basarsa yerden zıplatarak uçuşa geçir
+			if (isActive && (Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_SPACE))) {
+				y += 1.0f; // Yerden hemen kesil ki onGround flag'ı tetiklensin
+				velocityY = jumpForce;
+				onGround = false;
+				isMoving = true;
 			}
 		}
 
@@ -188,14 +196,7 @@ public class BirdPlayerController extends Component {
 		}
 
 		// 2. Yönelim Kontrolleri
-		if (isMoving) {
-			// Sadece hareket ederken farenin/kameranın baktığı yöne dön
-			currentTargetYaw = -camera.getYaw();
-			// Eğer uçuyorsak kameranın pitch'ini al, yoksa dalış/süzülme pitch'ini koru
-			if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
-				currentTargetPitch = camera.getPitch();
-			}
-		}
+		// Artık her karede yönelimi kameraya göre ayarlıyoruz (yukarıda atandı)
 
 		float currentYaw = gameObject.getRotation().y;
 		float currentPitch = gameObject.getRotation().x;
@@ -233,10 +234,10 @@ public class BirdPlayerController extends Component {
 		float targetAutoPich = diffPitch * 1.2f;
 
 		boolean manualRoll = false;
-		if (Keyboard.isKeyDown(Keyboard.KEY_Q)) {
+		if (isActive && Keyboard.isKeyDown(Keyboard.KEY_Q)) {
 			currentRoll -= rollSpeed * delta;
 			manualRoll = true;
-		} else if (Keyboard.isKeyDown(Keyboard.KEY_E)) {
+		} else if (isActive && Keyboard.isKeyDown(Keyboard.KEY_E)) {
 			currentRoll += rollSpeed * delta;
 			manualRoll = true;
 		}

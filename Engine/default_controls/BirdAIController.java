@@ -23,7 +23,7 @@ public class BirdAIController extends Component {
 
 	// Model hizalama offsetleri (Oyuncu kuşuyla aynı)
 	private float modelYawOffset = 180.0f;
-	private float modelPitchOffset = -90.0f;
+	private float modelPitchOffset = 0.0f;
 	private float modelRollOffset = 0.0f;
 
 	// AI Uçuş Yükseklik limitleri

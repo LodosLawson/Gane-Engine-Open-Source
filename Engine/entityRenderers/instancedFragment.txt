@@ -48,6 +48,10 @@ uniform vec4  uCloudShadowPos[32];
 uniform float uCloudShadowAlpha[32];
 uniform int   uNumCloudShadows;
 
+uniform vec3 uFogColor;
+uniform float uFogDensity;
+uniform float uFogStart;
+
 // --- SIMPLE PROCEDURAL NOISE ---
 float hash(vec2 p) {
     p  = fract(p * vec2(5.3983, 5.4427));
@@ -235,6 +239,12 @@ void main(void){
 	}
 	
 	// Sonuç = Güneş Işığı + Nokta Işığı + Speküler Parlamalar
-	out_colour = sunLightColour + vec4(pointLightIllumination * diffuseColour.rgb, 0.0) + vec4(totalSpecular, 0.0);
+	vec4 litColor = sunLightColour + vec4(pointLightIllumination * diffuseColour.rgb, 0.0) + vec4(totalSpecular, 0.0);
+	
+	// --- DISTANCE FOG ---
+	float fogFactor = clamp(smoothstep(uFogStart, uFogStart * 8.0, pass_distanceToCamera) * uFogDensity, 0.0, 1.0);
+	vec3 finalColor = mix(litColor.rgb, uFogColor, fogFactor);
+	
+	out_colour = vec4(finalColor, litColor.a);
 	
 }

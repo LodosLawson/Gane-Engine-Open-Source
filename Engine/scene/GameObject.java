@@ -18,6 +18,11 @@ public class GameObject extends Entity {
 	private static ModelLoader modelLoader = new ModelLoader();
 	private boolean started = false;
 	private scene.animation.Animator animator;
+	private String originalFilePath; // Scene serialization (Save/Load) icin
+	
+	public String getOriginalFilePath() {
+		return originalFilePath;
+	}
 
 	/**
 	 * Otomatik Model ve Kaplama yükleyen Standart Constructor.
@@ -25,6 +30,10 @@ public class GameObject extends Entity {
 	 */
 	public GameObject(String objFilePath, String colorFilePath, String roughnessFilePath) {
 		super(loadModelSafe(objFilePath), loadSkinSafe(colorFilePath, roughnessFilePath));
+		this.originalFilePath = objFilePath;
+		if (objFilePath != null && objFilePath.toLowerCase().endsWith(".glb")) {
+			this.getModelOffsetRot().set(0, 0, 0);
+		}
 		initAnimation(getModel());
 	}
 
@@ -34,6 +43,10 @@ public class GameObject extends Entity {
 	 */
 	public GameObject(String objFilePath, String colorFilePath) {
 		super(loadModelSafe(objFilePath), loadSkinSafe(colorFilePath, null));
+		this.originalFilePath = objFilePath;
+		if (objFilePath != null && objFilePath.toLowerCase().endsWith(".glb")) {
+			this.getModelOffsetRot().set(0, 0, 0);
+		}
 		initAnimation(getModel());
 	}
 
@@ -47,6 +60,7 @@ public class GameObject extends Entity {
 	 */
 	public GameObject(String glbFilePath) {
 		super(null, null); // Ana taşıyıcı (Görünmez)
+		this.originalFilePath = glbFilePath;
 		
 		java.util.List<Model> models = modelLoader.loadModels(new utils.MyFile(glbFilePath));
 		
@@ -62,6 +76,7 @@ public class GameObject extends Entity {
 				Texture fallbackTex = Texture.newTexture(new utils.MyFile("res/WoodFloor004.png")).anisotropic().create();
 				setSkin(new Skin(fallbackTex, null));
 			}
+			this.getModelOffsetRot().set(0, 0, 0); // GLB objelerinin yan yatmaması için sıfırlandı
 			initAnimation(model);
 		} else {
 			// Eğer çok parçalı (Multi-Mesh) ise çocuk (child) objeler üret
@@ -81,6 +96,7 @@ public class GameObject extends Entity {
 				skin.setTransparent(model.getModelData().isTransparent());
 				
 				child.setSkin(skin);
+				child.getModelOffsetRot().set(0, 0, 0); // GLB objelerinin yan yatmaması için sıfırlandı
 				multiMeshParts.add(child);
 			}
 			// Multi-mesh için ana animasyonu (varsa) ilk parçadan alabiliriz, fakat genelde multi-mesh animasyonları karmaşıktır.

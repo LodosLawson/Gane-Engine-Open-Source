@@ -75,12 +75,23 @@ public class GLBFileLoader {
             }
             float[] weights = weightsAccessorIndex != -1 ? readFloatArray(weightsAccessorIndex, gltf, binBuffer) : null;
             
-            // 5. Calculate furthest point
+            // 5. Calculate furthest point and BoundingBox
+            float minX = Float.MAX_VALUE, minY = Float.MAX_VALUE, minZ = Float.MAX_VALUE;
+            float maxX = -Float.MAX_VALUE, maxY = -Float.MAX_VALUE, maxZ = -Float.MAX_VALUE;
             float furthestPoint = 0;
+            
             for (int i = 0; i < positions.length; i += 3) {
                 float x = positions[i];
                 float y = positions[i+1];
                 float z = positions[i+2];
+                
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+                if (z < minZ) minZ = z;
+                if (z > maxZ) maxZ = z;
+                
                 float distSq = x*x + y*y + z*z;
                 if (distSq > furthestPoint) {
                     furthestPoint = distSq;
@@ -88,7 +99,7 @@ public class GLBFileLoader {
             }
             furthestPoint = (float) Math.sqrt(furthestPoint);
             
-            ModelData modelData = new ModelData(positions, texCoords, normals, indices, joints, weights, furthestPoint);
+            ModelData modelData = new ModelData(positions, texCoords, normals, indices, joints, weights, furthestPoint, minX, maxX, minY, maxY, minZ, maxZ);
             
             // 6. Extract Animation Data
             if (gltf.has("skins") && joints != null) {
@@ -218,11 +229,22 @@ public class GLBFileLoader {
                     }
                     float[] weights = weightsAccessorIndex != -1 ? readFloatArray(weightsAccessorIndex, gltf, binBuffer) : null;
                     
+                    float minX = Float.MAX_VALUE, minY = Float.MAX_VALUE, minZ = Float.MAX_VALUE;
+                    float maxX = -Float.MAX_VALUE, maxY = -Float.MAX_VALUE, maxZ = -Float.MAX_VALUE;
                     float furthestPoint = 0;
+                    
                     for (int i = 0; i < positions.length; i += 3) {
                         float x = positions[i];
                         float y = positions[i+1];
                         float z = positions[i+2];
+                        
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                        if (z < minZ) minZ = z;
+                        if (z > maxZ) maxZ = z;
+                        
                         float distSq = x*x + y*y + z*z;
                         if (distSq > furthestPoint) {
                             furthestPoint = distSq;
@@ -230,7 +252,8 @@ public class GLBFileLoader {
                     }
                     furthestPoint = (float) Math.sqrt(furthestPoint);
                     
-                    ModelData modelData = new ModelData(positions, texCoords, normals, indices, joints, weights, furthestPoint);
+                    ModelData modelData = new ModelData(positions, texCoords, normals, indices, joints, weights, furthestPoint,
+                            minX, maxX, minY, maxY, minZ, maxZ);
                     
                     // Extract Texture Data and Material properties for this specific primitive
                     if (primitive.has("material") && gltf.has("images") && gltf.has("materials")) {
@@ -267,6 +290,8 @@ public class GLBFileLoader {
                             }
                         }
                     }
+                    String meshName = mesh.has("name") ? mesh.getString("name") : "Mesh_" + meshIndex;
+                    modelData.setName(meshName);
                     
                     models.add(modelData);
                 }

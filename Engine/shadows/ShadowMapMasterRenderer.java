@@ -375,17 +375,30 @@ public class ShadowMapMasterRenderer {
         Matrix4f transform = new Matrix4f();
         transform.setIdentity();
         Matrix4f.translate(entity.getPosition(), transform, transform);
-        if (entity.getRotation().x != 0)
-            Matrix4f.rotate((float) Math.toRadians(entity.getRotation().x), new Vector3f(1, 0, 0), transform,
-                    transform);
         if (entity.getRotation().y != 0)
             Matrix4f.rotate((float) Math.toRadians(entity.getRotation().y), new Vector3f(0, 1, 0), transform,
+                    transform);
+        if (entity.getRotation().x != 0)
+            Matrix4f.rotate((float) Math.toRadians(entity.getRotation().x), new Vector3f(1, 0, 0), transform,
                     transform);
         if (entity.getRotation().z != 0)
             Matrix4f.rotate((float) Math.toRadians(entity.getRotation().z), new Vector3f(0, 0, 1), transform,
                     transform);
+                    
+        if (entity.getModelOffsetRot().x != 0)
+            Matrix4f.rotate((float) Math.toRadians(entity.getModelOffsetRot().x), new Vector3f(1, 0, 0), transform,
+                    transform);
+        if (entity.getModelOffsetRot().y != 0)
+            Matrix4f.rotate((float) Math.toRadians(entity.getModelOffsetRot().y), new Vector3f(0, 1, 0), transform,
+                    transform);
+        if (entity.getModelOffsetRot().z != 0)
+            Matrix4f.rotate((float) Math.toRadians(entity.getModelOffsetRot().z), new Vector3f(0, 0, 1), transform,
+                    transform);
+
         if (entity.getScale() != 1.0f)
             Matrix4f.scale(new Vector3f(entity.getScale(), entity.getScale(), entity.getScale()), transform, transform);
+        if (entity.getBaseOffset().x != 0 || entity.getBaseOffset().y != 0 || entity.getBaseOffset().z != 0)
+            Matrix4f.translate(entity.getBaseOffset(), transform, transform);
 
         Matrix4f mvpMatrix = new Matrix4f();
         Matrix4f.mul(projectionViewMatrix, transform, mvpMatrix);

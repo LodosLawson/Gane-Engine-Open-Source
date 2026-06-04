@@ -129,6 +129,8 @@ public class AtmosphereRenderer {
 		shader.skyColorSunset.loadVec3(sky.getSkyColorSunset());
 		shader.spaceColor.loadVec3(sky.getSpaceColor());
 		shader.time.loadFloat(sky.getTime());
+		shader.uFogDensity.loadFloat(sky.getFogDensity());
+		shader.uFogColor.loadVec3(sky.getFogColor());
 
 		GL11.glClearColor(sky.getSpaceColor().x, sky.getSpaceColor().y, sky.getSpaceColor().z, 1.0f);
 

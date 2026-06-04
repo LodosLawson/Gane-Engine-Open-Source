@@ -70,17 +70,25 @@ public class StaticBatcher {
 			Matrix4f transformationMatrix = new Matrix4f();
 			transformationMatrix.setIdentity();
 			Matrix4f.translate(e.getPosition(), transformationMatrix, transformationMatrix);
-			if (e.getRotation().x != 0) {
-				Matrix4f.rotate((float) Math.toRadians(e.getRotation().x), new Vector3f(1, 0, 0), transformationMatrix, transformationMatrix);
-			}
 			if (e.getRotation().y != 0) {
 				Matrix4f.rotate((float) Math.toRadians(e.getRotation().y), new Vector3f(0, 1, 0), transformationMatrix, transformationMatrix);
+			}
+			if (e.getRotation().x != 0) {
+				Matrix4f.rotate((float) Math.toRadians(e.getRotation().x), new Vector3f(1, 0, 0), transformationMatrix, transformationMatrix);
 			}
 			if (e.getRotation().z != 0) {
 				Matrix4f.rotate((float) Math.toRadians(e.getRotation().z), new Vector3f(0, 0, 1), transformationMatrix, transformationMatrix);
 			}
+			
+			if (e.getModelOffsetRot().x != 0) Matrix4f.rotate((float) Math.toRadians(e.getModelOffsetRot().x), new Vector3f(1, 0, 0), transformationMatrix, transformationMatrix);
+			if (e.getModelOffsetRot().y != 0) Matrix4f.rotate((float) Math.toRadians(e.getModelOffsetRot().y), new Vector3f(0, 1, 0), transformationMatrix, transformationMatrix);
+			if (e.getModelOffsetRot().z != 0) Matrix4f.rotate((float) Math.toRadians(e.getModelOffsetRot().z), new Vector3f(0, 0, 1), transformationMatrix, transformationMatrix);
+
 			if (e.getScale() != 1.0f) {
 				Matrix4f.scale(new Vector3f(e.getScale(), e.getScale(), e.getScale()), transformationMatrix, transformationMatrix);
+			}
+			if (e.getBaseOffset().x != 0 || e.getBaseOffset().y != 0 || e.getBaseOffset().z != 0) {
+				Matrix4f.translate(e.getBaseOffset(), transformationMatrix, transformationMatrix);
 			}
 
 			float[] inVertices = md.getVertices();

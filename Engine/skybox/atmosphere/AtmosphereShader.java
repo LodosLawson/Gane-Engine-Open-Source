@@ -22,10 +22,12 @@ public class AtmosphereShader extends ShaderProgram {
 	protected UniformFloat isSun = new UniformFloat("isSun");
 	protected UniformVec3 planetCenter = new UniformVec3("planetCenter");
 	protected UniformFloat time = new UniformFloat("time");
+	protected UniformFloat uFogDensity = new UniformFloat("uFogDensity");
+	protected UniformVec3 uFogColor = new UniformVec3("uFogColor");
 	
 	public AtmosphereShader() {
 		super(VERTEX_SHADER, FRAGMENT_SHADER, "in_position", "modelMatrixCol0", "modelMatrixCol1", "modelMatrixCol2", "modelMatrixCol3", "cloudProperties");
-		super.storeAllUniformLocations(projectionViewMatrix, modelMatrix, sunPosition, atmosphereThickness, skyColorDay, skyColorSunset, spaceColor, cameraPosition, isSun, planetCenter, time);
+		super.storeAllUniformLocations(projectionViewMatrix, modelMatrix, sunPosition, atmosphereThickness, skyColorDay, skyColorSunset, spaceColor, cameraPosition, isSun, planetCenter, time, uFogDensity, uFogColor);
 	}
 
 }

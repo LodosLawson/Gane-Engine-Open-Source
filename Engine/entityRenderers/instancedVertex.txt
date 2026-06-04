@@ -25,10 +25,25 @@ uniform float useFakeLighting;
 uniform vec3 cameraPosition;
 uniform mat4 toShadowMapSpace;
 uniform float numberOfRows;
-
+uniform float uTime;
+uniform vec2 uWindDir;
 void main(void){
 
 	vec4 worldPosition = transformationMatrix * vec4(in_position, 1.0);
+	
+	float windStrength = length(uWindDir);
+	if (windStrength > 0.0) {
+	    float heightOffset = worldPosition.y - transformationMatrix[3][1];
+	    if (heightOffset > 0.1) {
+	        float wave = sin(uTime * 2.0 + worldPosition.x * 0.1 + worldPosition.z * 0.1) + 
+	                     cos(uTime * 1.5 + worldPosition.z * 0.15 - worldPosition.x * 0.05);
+	        float displacementFactor = (heightOffset * 0.02) * wave * windStrength;
+	        vec2 windDirNorm = normalize(uWindDir);
+	        worldPosition.x += windDirNorm.x * displacementFactor;
+	        worldPosition.z += windDirNorm.y * displacementFactor;
+	    }
+	}
+
 	pass_pos = worldPosition.xz;
 	
 	gl_Position = projectionViewMatrix * worldPosition;

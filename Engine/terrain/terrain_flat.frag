@@ -320,7 +320,7 @@ void main(void) {
 
     // --- DISTANCE FOG ---
     float dist = length(uCameraPos - pass_worldPos);
-    float fogFactor = smoothstep(uFogStart, uFogStart * 2.8, dist) * uFogDensity;
+    float fogFactor = clamp(smoothstep(uFogStart, uFogStart * 8.0, dist) * uFogDensity, 0.0, 1.0);
     vec3 finalColor = mix(litColor, uFogColor, fogFactor);
 
     out_colour = vec4(finalColor, finalAlbedo.a);

@@ -47,6 +47,12 @@ public class ShipController extends Component {
 	private float waterHeight = 5.0f; // MainApp'teki okyanus yüksekliği
 	
 	private float hullDepthOffset = -6.4f; 
+	
+	private boolean isActive = false;
+	
+	public void setActive(boolean active) {
+		this.isActive = active;
+	}
 
 	public ShipController(extra.Camera camera, terrain.flat.FlatTerrain terrain) {
 		this.camera = camera;
@@ -111,11 +117,25 @@ public class ShipController extends Component {
 	}
 	
 	private void handleControls(float delta) {
-		// GAZ KOLU KONTROLÜ (Telegraph)
-		if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_W)) {
-			targetThrottle = Math.min(1.0f, targetThrottle + delta * 0.5f); // Gaz kolunu ileri it
-		} else if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_S)) {
-			targetThrottle = Math.max(-1.0f, targetThrottle - delta * 0.5f); // Gaz kolunu geri çek
+		if (!isActive) {
+			targetThrottle = 0.0f;
+			targetRudderAngle = 0.0f;
+		} else {
+			// GAZ KOLU KONTROLÜ (Telegraph)
+			if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_W)) {
+				targetThrottle = Math.min(1.0f, targetThrottle + delta * 0.5f); // Gaz kolunu ileri it
+			} else if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_S)) {
+				targetThrottle = Math.max(-1.0f, targetThrottle - delta * 0.5f); // Gaz kolunu geri çek
+			}
+			
+			// DÜMEN KONTROLÜ (Rudder)
+			if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_A) || org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_LEFT)) {
+				targetRudderAngle = 1.0f; // İskele (Sola Dönüş)
+			} else if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_D) || org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_RIGHT)) {
+				targetRudderAngle = -1.0f; // Sancak (Sağa Dönüş)
+			} else {
+				targetRudderAngle = 0.0f; // Dümeni ortala
+			}
 		}
 		
 		// Motor devri (currentThrottle) hedeflenen gaz koluna yavaşça ulaşır
@@ -123,15 +143,6 @@ public class ShipController extends Component {
 			currentThrottle = Math.min(targetThrottle, currentThrottle + engineAcceleration * delta);
 		} else if (currentThrottle > targetThrottle) {
 			currentThrottle = Math.max(targetThrottle, currentThrottle - engineAcceleration * delta);
-		}
-		
-		// DÜMEN KONTROLÜ (Rudder)
-		if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_A) || org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_LEFT)) {
-			targetRudderAngle = 1.0f; // İskele (Sola Dönüş)
-		} else if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_D) || org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_RIGHT)) {
-			targetRudderAngle = -1.0f; // Sancak (Sağa Dönüş)
-		} else {
-			targetRudderAngle = 0.0f; // Dümeni ortala
 		}
 		
 		// Dümen fiziki olarak dönme süresi ister (Anında dönmez)

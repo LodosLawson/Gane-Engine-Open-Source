@@ -46,6 +46,11 @@ public class InstancedShader extends ShaderProgram {
 	protected UniformFloat uTime = new UniformFloat("uTime");
 	protected shaders.UniformVec2 uWindDir = new shaders.UniformVec2("uWindDir");
 
+	// Fog Uniforms
+	protected UniformVec3 uFogColor = new UniformVec3("uFogColor");
+	protected UniformFloat uFogDensity = new UniformFloat("uFogDensity");
+	protected UniformFloat uFogStart = new UniformFloat("uFogStart");
+
 	public InstancedShader() {
 		super(VERTEX_SHADER, FRAGMENT_SHADER, "in_position", "in_textureCoords", "in_normal", "transformationMatrix");
 		
@@ -80,6 +85,9 @@ public class InstancedShader extends ShaderProgram {
 		list.add(uNumCloudShadows);
 		list.add(uTime);
 		list.add(uWindDir);
+		list.add(uFogColor);
+		list.add(uFogDensity);
+		list.add(uFogStart);
 
 		super.storeAllUniformLocations(list.toArray(new shaders.Uniform[0]));
 		connectTextureUnits();

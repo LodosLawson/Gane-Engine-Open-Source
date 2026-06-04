@@ -253,11 +253,20 @@ void main()
 	
 	// Add sun specular and ambient light
 	vec3 litColor = finalSurface + (spec * lightColor * ndotl * cloudShadow) + (deepTint * lightAmbient * 0.1);
+	
+	// Çok yüksek parlamaların ufukta sisi delip geçmesini engellemek için sınırla
+	litColor = clamp(litColor, 0.0, 1.5);
 
-	// --- DISTANCE FOG ---
+	// --- DISTANCE FOG (SKY MERGE) ---
 	float distToCamera = length(eyePos - pass_worldPos);
-	float fogFactor = smoothstep(uFogStart, uFogStart * 2.8, distToCamera) * uFogDensity;
-	vec3 finalColorWithFog = mix(litColor, uFogColor, fogFactor);
+	float fogFactor = clamp(smoothstep(uFogStart, uFogStart * 8.0, distToCamera) * uFogDensity, 0.0, 1.0);
+	
+	// Okyanus ufukta "gri sis" yerine gökyüzünün yansımasına (reflColor) geçiş yapsın.
+	// Böylece gökyüzü mavi olduğunda okyanus da uzakta mükemmel bir şekilde o maviye karışır.
+	vec3 finalColorWithFog = mix(litColor, reflColor, fogFactor);
 
-	my_FragColor0 = vec4(finalColorWithFog, edgeAlpha);
+	// Okyanusun ufukta keskin kesilmesini onlemek icin, sis yoğunlaştıkça alpha'yı 1.0'a zorla
+	float finalAlpha = mix(edgeAlpha, 1.0, fogFactor);
+
+	my_FragColor0 = vec4(finalColorWithFog, finalAlpha);
 }
