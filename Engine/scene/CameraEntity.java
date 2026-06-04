@@ -11,6 +11,7 @@ public class CameraEntity extends Entity {
 	private CameraMode mode = CameraMode.FIRST_PERSON;
 	
 	public CameraEntity() {
+		super(null, null);
 		// Kameranin default baslangic pozisyonu
 		getPosition().set(0, 10, 0);
 	}

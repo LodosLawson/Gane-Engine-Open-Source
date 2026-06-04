@@ -145,7 +145,6 @@ public class ViewportCanvas extends Canvas {
 							}
 						}
 						wasLeftMouseDown = isLeftDown;
-					}
 					
 					// Animasyonlu objeleri vs guncelle
 					for (scene.Entity e : scene.getAllEntities()) {
