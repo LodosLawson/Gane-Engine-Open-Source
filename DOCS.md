@@ -1,8 +1,8 @@
 # 🎮 Gane Engine — Geliştirici Referans Kılavuzu
 
-> **Sürüm:** 1.0  
+> **Sürüm:** 1.1.0
 > **Teknoloji:** Java 8+ / LWJGL 2.9.3 / OpenGL 3.3+  
-> **Mimari:** Forward Rendering + Shadow Mapping + FFT Ocean
+> **Mimari:** Forward Rendering + Shadow Mapping + FFT Ocean + Gane IDE
 
 ---
 
