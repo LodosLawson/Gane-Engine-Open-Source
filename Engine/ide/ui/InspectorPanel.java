@@ -1,10 +1,15 @@
 package ide.ui;
 
+import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
@@ -22,28 +27,38 @@ public class InspectorPanel extends JPanel {
 	private JTextField posX, posY, posZ;
 	private JTextField rotX, rotY, rotZ;
 	private JTextField scaleTxt;
+	private JCheckBox chkTransparent, chkShadow, chkReflection;
 	
 	public InspectorPanel() {
-		setLayout(new GridLayout(8, 2, 5, 5));
+		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBorder(BorderFactory.createTitledBorder("Inspector (Properties)"));
 		
-		add(new JLabel("Pos X:")); posX = new JTextField(); add(posX);
-		add(new JLabel("Pos Y:")); posY = new JTextField(); add(posY);
-		add(new JLabel("Pos Z:")); posZ = new JTextField(); add(posZ);
+		// 1. Transform Panel
+		JPanel transformPanel = new JPanel(new GridLayout(4, 2, 5, 5));
+		transformPanel.setBorder(BorderFactory.createTitledBorder("Transform"));
+		transformPanel.add(new JLabel("Pos X:")); posX = new JTextField(); transformPanel.add(posX);
+		transformPanel.add(new JLabel("Pos Y:")); posY = new JTextField(); transformPanel.add(posY);
+		transformPanel.add(new JLabel("Pos Z:")); posZ = new JTextField(); transformPanel.add(posZ);
+		transformPanel.add(new JLabel("Rot X:")); rotX = new JTextField(); transformPanel.add(rotX);
+		transformPanel.add(new JLabel("Rot Y:")); rotY = new JTextField(); transformPanel.add(rotY);
+		transformPanel.add(new JLabel("Rot Z:")); rotZ = new JTextField(); transformPanel.add(rotZ);
+		transformPanel.add(new JLabel("Scale:")); scaleTxt = new JTextField(); transformPanel.add(scaleTxt);
 		
-		add(new JLabel("Rot X:")); rotX = new JTextField(); add(rotX);
-		add(new JLabel("Rot Y:")); rotY = new JTextField(); add(rotY);
-		add(new JLabel("Rot Z:")); rotZ = new JTextField(); add(rotZ);
+		// 2. Material Panel
+		JPanel materialPanel = new JPanel(new GridLayout(3, 1));
+		materialPanel.setBorder(BorderFactory.createTitledBorder("Material & Render"));
+		chkTransparent = new JCheckBox("Is Transparent (Glass/Leaves)");
+		chkShadow = new JCheckBox("Casts Shadow");
+		chkReflection = new JCheckBox("Has Reflection (Water)");
+		materialPanel.add(chkTransparent);
+		materialPanel.add(chkShadow);
+		materialPanel.add(chkReflection);
 		
-		add(new JLabel("Scale:")); scaleTxt = new JTextField(); add(scaleTxt);
-		
+		// 3. Actions Panel
+		JPanel actionsPanel = new JPanel(new GridLayout(2, 1, 5, 5));
+		actionsPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 		JButton applyBtn = new JButton("Apply Changes");
-		applyBtn.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				applyValues();
-			}
-		});
+		applyBtn.addActionListener(e -> applyValues());
 		
 		JButton scriptBtn = new JButton("Add/Edit Script");
 		scriptBtn.addActionListener(e -> {
@@ -54,9 +69,19 @@ public class InspectorPanel extends JPanel {
 				javax.swing.JOptionPane.showMessageDialog(this, "Lutfen sahneden bir GameObject secin!", "Uyari", javax.swing.JOptionPane.WARNING_MESSAGE);
 			}
 		});
+		actionsPanel.add(applyBtn);
+		actionsPanel.add(scriptBtn);
 		
-		add(scriptBtn);
-		add(applyBtn);
+		// Hizalamalar
+		transformPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		materialPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		actionsPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		
+		add(transformPanel);
+		add(Box.createVerticalStrut(10));
+		add(materialPanel);
+		add(Box.createVerticalStrut(10));
+		add(actionsPanel);
 	}
 	
 	public void setSelectedEntity(Entity entity) {
@@ -71,10 +96,22 @@ public class InspectorPanel extends JPanel {
 			rotZ.setText(String.format(java.util.Locale.US, "%.2f", entity.getRotation().z));
 			
 			scaleTxt.setText(String.format(java.util.Locale.US, "%.2f", entity.getScale()));
+			
+			if (entity.getSkin() != null) {
+				chkTransparent.setSelected(entity.getSkin().isTransparent());
+			} else {
+				chkTransparent.setSelected(false);
+			}
+			chkShadow.setSelected(entity.isShadowCasting());
+			chkReflection.setSelected(entity.hasReflection());
+			
 		} else {
 			posX.setText(""); posY.setText(""); posZ.setText("");
 			rotX.setText(""); rotY.setText(""); rotZ.setText("");
 			scaleTxt.setText("");
+			chkTransparent.setSelected(false);
+			chkShadow.setSelected(false);
+			chkReflection.setSelected(false);
 		}
 	}
 	
@@ -90,6 +127,16 @@ public class InspectorPanel extends JPanel {
 			selectedEntity.getRotation().z = Float.parseFloat(rotZ.getText());
 			
 			selectedEntity.setScale(Float.parseFloat(scaleTxt.getText()));
+			
+			// Skin Update
+			if (selectedEntity.getSkin() != null) {
+				selectedEntity.getSkin().setTransparent(chkTransparent.isSelected());
+			}
+			// Model attributes
+			selectedEntity.setCastsShadow(chkShadow.isSelected());
+			selectedEntity.setHasReflection(chkReflection.isSelected());
+			
+			System.out.println("Ozelikler guncellendi: " + selectedEntity.getClass().getSimpleName());
 		} catch(NumberFormatException ex) {
 			System.err.println("Gecersiz sayi formati. (Ondaliklar icin . kullanin)");
 		}

@@ -22,6 +22,8 @@ public class HierarchyPanel extends JPanel {
 	private JList<scene.Entity> entityList;
 	private ViewportCanvas viewport;
 	private InspectorPanel inspector;
+	private java.util.List<scene.Entity> allEntities = new java.util.ArrayList<>();
+	private javax.swing.JTextField searchField;
 	
 	public HierarchyPanel(ViewportCanvas viewport, InspectorPanel inspector) {
 		this.viewport = viewport;
@@ -33,9 +35,40 @@ public class HierarchyPanel extends JPanel {
 		listModel = new DefaultListModel<>();
 		entityList = new JList<>(listModel);
 		
+		// Custom Renderer (Renk/Ikon Gosterimi)
+		entityList.setCellRenderer(new javax.swing.DefaultListCellRenderer() {
+			@Override
+			public java.awt.Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+				super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+				if (value instanceof scene.GameObject) {
+					setText("📦 " + ((scene.GameObject) value).getOriginalFilePath());
+					setForeground(new java.awt.Color(169, 183, 198)); // Darcula Gray
+				} else if (value instanceof scene.Light) {
+					setText("💡 Light");
+					setForeground(new java.awt.Color(255, 198, 109)); // Darcula Yellow
+				} else {
+					setText("⚙️ " + value.getClass().getSimpleName());
+				}
+				return this;
+			}
+		});
+		
+		// Search Bar
+		searchField = new javax.swing.JTextField();
+		searchField.putClientProperty("JTextField.placeholderText", "Search Entities...");
+		searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+			public void changedUpdate(javax.swing.event.DocumentEvent e) { filter(); }
+			public void removeUpdate(javax.swing.event.DocumentEvent e) { filter(); }
+			public void insertUpdate(javax.swing.event.DocumentEvent e) { filter(); }
+		});
+		
+		JPanel topPanel = new JPanel(new BorderLayout());
+		topPanel.add(searchField, BorderLayout.CENTER);
+		add(topPanel, BorderLayout.NORTH);
+		
 		// Objeye tiklaninca Inspector'i guncelle
 		entityList.addListSelectionListener(e -> {
-			if (!e.getValueIsAdjusting()) {
+			if (!e.getValueIsAdjusting() && entityList.getSelectedValue() != null) {
 				inspector.setSelectedEntity(entityList.getSelectedValue());
 			}
 		});
@@ -73,7 +106,8 @@ public class HierarchyPanel extends JPanel {
 						
 						// Arayuzdeki (Swing) listeyi guncelle
 						javax.swing.SwingUtilities.invokeLater(() -> {
-							listModel.addElement(obj);
+							allEntities.add(obj);
+							filter();
 							entityList.setSelectedValue(obj, true);
 						});
 						
@@ -86,9 +120,24 @@ public class HierarchyPanel extends JPanel {
 		add(addBtn, BorderLayout.SOUTH);
 	}
 	
+	private void filter() {
+		String text = searchField.getText().toLowerCase();
+		listModel.clear();
+		for (scene.Entity e : allEntities) {
+			String name = e.getClass().getSimpleName();
+			if (e instanceof scene.GameObject && ((scene.GameObject)e).getOriginalFilePath() != null) {
+				name = ((scene.GameObject)e).getOriginalFilePath();
+			}
+			if (name.toLowerCase().contains(text)) {
+				listModel.addElement(e);
+			}
+		}
+	}
+	
 	public void selectEntity(scene.Entity entity) {
-		if (!listModel.contains(entity)) {
-			listModel.addElement(entity);
+		if (!allEntities.contains(entity)) {
+			allEntities.add(entity);
+			filter();
 		}
 		entityList.setSelectedValue(entity, true);
 	}

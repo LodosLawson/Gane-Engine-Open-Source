@@ -20,8 +20,10 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import ide.ui.EnvironmentPanel;
 import ide.ui.HierarchyPanel;
 import ide.ui.InspectorPanel;
+import ide.ui.ConsolePanel;
 import ide.utils.SceneSerializer;
 import utils.NativeLibraryLoader;
+import com.formdev.flatlaf.FlatDarculaLaf;
 
 /**
  * Gane Game Engine IDE'sinin (Editör) ana baslangic sinifi.
@@ -37,9 +39,10 @@ public class GaneIDE {
 
 	public GaneIDE() {
 		try {
-			// Windows/MacOS kendi arayuz temasini (Modern Gorunum) kullansin
-			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch (Exception e) {}
+			UIManager.setLookAndFeel(new FlatDarculaLaf());
+		} catch (Exception e) {
+			System.err.println("FlatLaf yuklenemedi, sistem temasi kullaniliyor.");
+		}
 		
 		frame = new JFrame("Gane Game Engine IDE v1.1.0");
 		frame.setSize(1400, 800);
@@ -74,7 +77,12 @@ public class GaneIDE {
 		JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, hierarchyPanel, rightSplit);
 		mainSplit.setResizeWeight(0.0);
 		
-		frame.add(mainSplit, BorderLayout.CENTER);
+		// 3.1. Konsol Panelini alta ekleme
+		ConsolePanel consolePanel = new ConsolePanel();
+		JSplitPane verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplit, consolePanel);
+		verticalSplit.setResizeWeight(0.8); // Ust kisim %80, konsol %20
+		
+		frame.add(verticalSplit, BorderLayout.CENTER);
 		
 		// 4. Ust Menuler (MenuBar)
 		setupMenuBar();
