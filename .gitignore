@@ -6,3 +6,9 @@ sources.txt
 .settings/
 .project
 .classpath
+
+# Unused large models
+src/res/DEFAULTTREES/realistic_fir_trees_pack_lods_gameready.glb
+src/res/DEFAULTTREES/locust_tree_pack.glb
+src/res/DEFAULTTREES/tree_animate.glb
+src/res/DEFAULT_TREE_ALL_PACK/
