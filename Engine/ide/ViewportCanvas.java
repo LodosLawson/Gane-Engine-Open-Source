@@ -54,6 +54,13 @@ public class ViewportCanvas extends Canvas {
 	public ViewportCanvas() {
 		setFocusable(true);
 		
+		addMouseListener(new java.awt.event.MouseAdapter() {
+			@Override
+			public void mousePressed(java.awt.event.MouseEvent e) {
+				requestFocusInWindow();
+			}
+		});
+		
 		// Pencere boyutu degistiginde (Resize) OpenGL Viewport'unu da guncelle
 		addComponentListener(new ComponentAdapter() {
 			@Override
