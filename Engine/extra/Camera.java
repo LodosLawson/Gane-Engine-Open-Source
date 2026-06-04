@@ -383,15 +383,7 @@ public class Camera implements ICamera {
 		Matrix4f.translate(negativePosition, viewMatrix, viewMatrix);
 	}
 
-	/**
-	 * Ekranın genişliğine ve yüksekliğine bakarak perspektif matrisini oluşturur.
-	 * 3D nesnelerin ekranda uzaklığa göre küçülmesini sağlar.
-	 * 
-	 * @return Oluşturulan perspektif matrisi.
-	 */
-	public Matrix4f getProjectionMatrix() {
-		return projectionMatrix;
-	}
+
 
 	private Matrix4f createProjectionMatrix() {
 		Matrix4f projectionMatrix = new Matrix4f();

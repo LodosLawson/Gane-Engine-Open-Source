@@ -98,7 +98,7 @@ public class InspectorPanel extends JPanel {
 			scaleTxt.setText(String.format(java.util.Locale.US, "%.2f", entity.getScale()));
 			
 			if (entity.getSkin() != null) {
-				chkTransparent.setSelected(entity.getSkin().isTransparent());
+				chkTransparent.setSelected(entity.getSkin().hasTransparency());
 			} else {
 				chkTransparent.setSelected(false);
 			}

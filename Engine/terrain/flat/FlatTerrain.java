@@ -860,15 +860,11 @@ public class FlatTerrain implements ITerrain {
     @Override public float getWidth()      { return this.width; }
     @Override public float getDepth()      { return this.depth; }
 
-    // ProsedÃ¼rel parametre getter'larÄ± (TerrainGeneratorDialog iÃ§in)
-    public float getPMaxHeight() { return pMaxHeight; }
-    public float getPRoughness() { return pRoughness; }
-    public int   getPOctaves()   { return pOctaves; }
-    public float getPScale()     { return pScale; }
+
     public float getPOffsetX()   { return pOffsetX; }
     public float getPOffsetZ()   { return pOffsetZ; }
     public float getBaseHeight() { return baseHeight; }
-    public boolean isInfinite()  { return isInfinite; }
+
     public int getGridCount()    { return gridCount; }
     public long getSeed()        { return pSeed; }
     public float getMaxHeight()  { return pMaxHeight; }

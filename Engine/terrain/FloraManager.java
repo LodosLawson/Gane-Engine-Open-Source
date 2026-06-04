@@ -52,6 +52,10 @@ public class FloraManager {
         }
     }
 
+    public static void clearCache() {
+        chunkCache.clear();
+    }
+
     public static void update(Scene scene) {
         if (scene == null || scene.getCamera() == null) {
             return;
