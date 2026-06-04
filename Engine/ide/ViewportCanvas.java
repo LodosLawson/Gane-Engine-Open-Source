@@ -66,7 +66,9 @@ public class ViewportCanvas extends Canvas {
 			@Override
 			public void componentResized(ComponentEvent e) {
 				if (Display.isCreated()) {
-					GL11.glViewport(0, 0, getWidth(), getHeight());
+					enqueue(() -> {
+						GL11.glViewport(0, 0, getWidth(), getHeight());
+					});
 				}
 			}
 		});
