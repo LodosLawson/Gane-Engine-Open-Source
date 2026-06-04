@@ -745,6 +745,22 @@ Oyun motoruna eklenen hazır nesneler için önceden kodlanmış fizik/oyun kont
 
 ---
 
+## 24. 🖥️ Gane IDE (Görsel Arayüz) — `ide`
+
+Gane Engine, Unity veya Unreal Engine benzeri tam teşekküllü bir görsel düzenleyici ile birlikte gelir! `Engine/ide/GaneIDE.java` sınıfı üzerinden başlatılabilir. 
+
+| Sınıf / Panel | Açıklama |
+|-------|----------|
+| `GaneIDE` | Arayüzün ana başlatıcısıdır (Java Swing). |
+| `ViewportCanvas` | Oyunun render edildiği 3D ekrandır. Fare sol tıkı ile objeleri seçmenizi (Mouse Picking) sağlayan raycast algoritmasını barındırır. |
+| `HierarchyPanel` | Sahnedeki tüm objeleri listeler. Bilgisayardan sürükle-bırak mantığıyla `.glb` modeli eklemenize olanak tanır. |
+| `InspectorPanel` | Seçili objenin X,Y,Z konumunu ve rotasyonunu düzenler. **Add/Edit Script** butonu sayesinde objelere anlık olarak Java kodu yazıp bağlamanızı sağlar. |
+| `EnvironmentPanel` | Gece/Gündüz döngüsünü kaydırıcı ile yönetmenizi, okyanus rengini ve dalga boyunu anlık değiştirmenizi sağlar. |
+| `SceneSerializer` | Sahnenizi `*.gane` uzantılı bir JSON dosyası olarak kaydeder ve yükler (Scriptler ve Environment ayarları dahil). |
+| `RuntimeCompiler` | Java 8+ / 17+ kodlarını oyun motoru çalışırken (çalışma zamanında) derleyerek (Runtime Compilation) anında objelere Component olarak yükler. Oyunu veya IDE'yi kapatmanıza gerek kalmaz! |
+
+---
+
 ## 📋 Hızlı Başlangıç — Minimal Oyun Döngüsü
 
 ```java
