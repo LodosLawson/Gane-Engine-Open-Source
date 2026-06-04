@@ -20,11 +20,10 @@ public class GameExporter {
             sb.append("import org.lwjgl.opengl.Display;\n");
             sb.append("import org.lwjgl.util.vector.Vector3f;\n");
             sb.append("import extra.Camera;\n");
-            sb.append("import renderEngine.DisplayManager;\n");
             sb.append("import renderEngine.RenderEngine;\n");
             sb.append("import scene.Scene;\n");
             sb.append("import scene.GameObject;\n");
-            sb.append("import utils.AppSettings;\n");
+            sb.append("import gane.AppSettings;\n");
             sb.append("import terrain.flat.FlatTerrain;\n");
             sb.append("import water.tile.WaterTile;\n");
             sb.append("import environment.DayNightManager;\n");
@@ -32,26 +31,25 @@ public class GameExporter {
             
             sb.append("public class MyGameLauncher {\n");
             sb.append("    public static void main(String[] args) {\n");
-            sb.append("        AppSettings.TITLE = \"Gane Engine - Exported Game\";\n");
-            sb.append("        DisplayManager.createDisplay();\n");
-            sb.append("        \n");
+            sb.append("        gane.AppSettings.setup(1280, 720, false, \"Gane Engine - Exported Game\", null);\n");
+            sb.append("\n");
             sb.append("        Camera camera = new Camera();\n");
             sb.append("        camera.getPosition().set(0, 10, 0);\n");
-            sb.append("        \n");
-            sb.append("        Scene scene = new Scene();\n");
-            sb.append("        RenderEngine renderEngine = new RenderEngine();\n");
-            sb.append("        \n");
+            sb.append("\n");
+            sb.append("        Scene scene = new Scene(camera);\n");
+            sb.append("        RenderEngine renderEngine = RenderEngine.init();\n");
+            sb.append("\n");
             
             JSONObject env = root.optJSONObject("environment");
             if (env != null) {
-                if (env.has("atmosphere") && env.getJSONObject("atmosphere").getBoolean("enabled")) {
-                    sb.append("        scene.setSky(new AtmosphereSky(camera));\n");
+                if (env.has("atmosphereSky") && env.getJSONObject("atmosphereSky").getBoolean("enabled")) {
+                    sb.append("        scene.setSky(new AtmosphereSky());\n");
                 }
                 if (env.has("terrain") && env.getJSONObject("terrain").getBoolean("enabled")) {
                     JSONObject t = env.getJSONObject("terrain");
-                    sb.append(String.format(java.util.Locale.US, "        FlatTerrain ft = new FlatTerrain(new Vector3f(0, 0, 0), %d, %.2ff, %.2ff, %.2ff);\n",
-                        t.getInt("octaves"), t.getFloat("scale"), t.getFloat("maxHeight"), t.getFloat("roughness")));
-                    sb.append("        ft.generateTerrain();\n");
+                    sb.append("        FlatTerrain ft = new FlatTerrain(2000, 2000);\n");
+                    sb.append(String.format(java.util.Locale.US, "        ft.generateProceduralTerrainV2(%.2ff, %.2ff, %d, %.2ff, %dL);\n",
+                        t.getFloat("maxHeight"), t.getFloat("roughness"), t.getInt("octaves"), t.getFloat("scale"), t.getLong("seed")));
                     sb.append("        scene.addTerrain(ft);\n");
                 }
                 if (env.has("water") && env.getJSONObject("water").getBoolean("enabled")) {
