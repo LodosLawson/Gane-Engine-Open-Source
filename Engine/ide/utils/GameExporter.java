@@ -15,8 +15,19 @@ public class GameExporter {
             String content = new String(Files.readAllBytes(Paths.get(ganeFilePath)));
             JSONObject root = new JSONObject(content);
             
+            String pkgName = "gane";
+            try {
+                String fullPath = new File(outputJavaFolder).getCanonicalPath().replace('\\', '/');
+                int srcIndex = fullPath.indexOf("/src/");
+                if (srcIndex != -1) {
+                    pkgName = fullPath.substring(srcIndex + 5).replace('/', '.');
+                }
+            } catch(Exception ignored) {}
+            
             StringBuilder sb = new StringBuilder();
-            sb.append("package gane;\n\n");
+            if (pkgName != null && !pkgName.isEmpty()) {
+                sb.append("package ").append(pkgName).append(";\n\n");
+            }
             sb.append("import org.lwjgl.opengl.Display;\n");
             sb.append("import org.lwjgl.util.vector.Vector3f;\n");
             sb.append("import extra.Camera;\n");

@@ -1,4 +1,4 @@
-dir /s /b *.java > sources.txt
+dir /s /b src\*.java Engine\*.java > sources.txt
 javac -encoding UTF-8 -cp "lib/*;lib/json.jar;lwjgl-2.9.3/jar/*;src;Engine" --release 17 -d bin @sources.txt
 del sources.txt
 xcopy /s /y /i src\res\* bin\res\ > nul

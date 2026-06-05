@@ -1,0 +1,47 @@
+{
+    "environment": {
+        "atmosphere": {"enabled": true},
+        "dayNight": {
+            "enabled": true,
+            "timeOfDay": 17.73857
+        },
+        "terrain": {
+            "octaves": 4,
+            "seed": 12345,
+            "maxHeight": 60,
+            "roughness": 0.4,
+            "scale": 300,
+            "enabled": true
+        },
+        "water": {
+            "enabled": true,
+            "height": -2
+        }
+    },
+    "entities": [
+        {
+            "mode": "FREE",
+            "position": {
+                "x": 0,
+                "y": 10,
+                "z": 0
+            },
+            "type": "CameraEntity"
+        },
+        {
+            "path": "src/res/DEFAULT_TREE_ALL_PACK/low_poly_forest_tree_pack.glb",
+            "rotation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+            },
+            "scale": 1,
+            "position": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+            },
+            "type": "GameObject"
+        }
+    ]
+}
