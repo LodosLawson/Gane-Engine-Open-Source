@@ -42,6 +42,7 @@ public class GameExporter {
             
             sb.append("public class MyGameLauncher {\n");
             sb.append("    public static void main(String[] args) {\n");
+            sb.append("        utils.NativeLibraryLoader.loadNativeLibraries();\n");
             sb.append("        gane.AppSettings.setup(1280, 720, false, \"Gane Engine - Exported Game\", null);\n");
             sb.append("\n");
             sb.append("        Camera camera = new Camera();\n");
