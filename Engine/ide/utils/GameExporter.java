@@ -54,7 +54,7 @@ public class GameExporter {
             
             JSONObject env = root.optJSONObject("environment");
             if (env != null) {
-                if (env.has("atmosphereSky") && env.getJSONObject("atmosphereSky").getBoolean("enabled")) {
+                if (env.has("atmosphere") && env.getJSONObject("atmosphere").getBoolean("enabled")) {
                     sb.append("        scene.setSky(new AtmosphereSky());\n");
                 }
                 if (env.has("terrain") && env.getJSONObject("terrain").getBoolean("enabled")) {
