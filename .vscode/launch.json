@@ -1,0 +1,33 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "MyGameLauncher",
+            "request": "launch",
+            "mainClass": "gane.MyGameLauncher",
+            "projectName": "gane"
+        },
+        {
+            "type": "java",
+            "name": "Run MyGameLauncher (Exported)",
+            "request": "launch",
+            "mainClass": "res.scane.MyGameLauncher",
+            "vmArgs": "-Djava.library.path=${workspaceFolder}/lwjgl-2.9.3/native/windows"
+        },
+        {
+            "type": "java",
+            "name": "Run GaneIDE",
+            "request": "launch",
+            "mainClass": "ide.GaneIDE",
+            "vmArgs": "-Djava.library.path=${workspaceFolder}/lwjgl-2.9.3/native/windows"
+        },
+        {
+            "type": "java",
+            "name": "Run MainApp",
+            "request": "launch",
+            "mainClass": "gane.MainApp",
+            "vmArgs": "-Djava.library.path=${workspaceFolder}/lwjgl-2.9.3/native/windows"
+        }
+    ]
+}

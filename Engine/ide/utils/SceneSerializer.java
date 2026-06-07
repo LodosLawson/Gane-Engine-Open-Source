@@ -50,6 +50,15 @@ public class SceneSerializer {
 					
 					objJson.put("scale", go.getScale());
 					
+					java.util.List<String> scripts = go.getScriptClassNames();
+					if (!scripts.isEmpty()) {
+						JSONArray scriptsArray = new JSONArray();
+						for (String script : scripts) {
+							scriptsArray.put(script);
+						}
+						objJson.put("scripts", scriptsArray);
+					}
+					
 					entitiesArray.put(objJson);
 				}
 			} else if (e instanceof scene.CameraEntity) {
@@ -79,6 +88,9 @@ public class SceneSerializer {
 			terrainJson.put("octaves", ft.getPOctaves());
 			terrainJson.put("scale", ft.getPScale());
 			terrainJson.put("seed", ft.getPSeed());
+			if (viewport.getCustomTerrainClassName() != null) {
+			    terrainJson.put("customClass", viewport.getCustomTerrainClassName());
+			}
 			envJson.put("terrain", terrainJson);
 		}
 		
@@ -151,6 +163,23 @@ public class SceneSerializer {
 							
 							go.setScale(objJson.getFloat("scale"));
 							
+							if (objJson.has("scripts")) {
+								JSONArray scriptsArray = objJson.getJSONArray("scripts");
+								for (int j = 0; j < scriptsArray.length(); j++) {
+									String scriptName = scriptsArray.getString(j);
+									try {
+										String binPath = new File(System.getProperty("user.dir"), "bin").getAbsolutePath();
+										java.net.URLClassLoader classLoader = java.net.URLClassLoader.newInstance(new java.net.URL[]{new File(binPath).toURI().toURL()});
+										Class<?> loadedClass = Class.forName(scriptName, true, classLoader);
+										if (scene.Component.class.isAssignableFrom(loadedClass)) {
+											go.addComponent((scene.Component) loadedClass.getDeclaredConstructor().newInstance());
+										}
+									} catch (Exception ex) {
+										System.err.println("Script yuklenemedi: " + scriptName);
+									}
+								}
+							}
+							
 							viewport.getScene().addEntity(go);
 						} catch (Exception objEx) {
 							System.err.println("Obje yuklenemedi (" + path + "): " + objEx.getMessage());
@@ -176,10 +205,23 @@ public class SceneSerializer {
 					if (envJson.has("terrain")) {
 						JSONObject terrainJson = envJson.getJSONObject("terrain");
 						if (terrainJson.getBoolean("enabled")) {
-							viewport.setTerrainEnabled(true);
-							// Procedural parametreler varsa onlari da al
-							// Not: Viewport'taki terrain nesnesi olusunca onu guncelleyebiliriz.
-							// Bunun icin ayri bir method gerekir, ama simdilik sadece "Enable" ediyoruz
+							if (terrainJson.has("customClass")) {
+								String customClassName = terrainJson.getString("customClass");
+								try {
+									String binPath = new File(System.getProperty("user.dir"), "bin").getAbsolutePath();
+									java.net.URLClassLoader classLoader = java.net.URLClassLoader.newInstance(new java.net.URL[]{new File(binPath).toURI().toURL()});
+									Class<?> loadedClass = Class.forName(customClassName, true, classLoader);
+									if (terrain.flat.FlatTerrain.class.isAssignableFrom(loadedClass)) {
+										terrain.flat.FlatTerrain customTerrain = (terrain.flat.FlatTerrain) loadedClass.getDeclaredConstructor().newInstance();
+										viewport.setCustomTerrain(customTerrain, customClassName);
+									}
+								} catch (Exception ex) {
+									System.err.println("Custom terrain yuklenemedi: " + customClassName);
+									viewport.setTerrainEnabled(true);
+								}
+							} else {
+								viewport.setTerrainEnabled(true);
+							}
 						}
 					}
 					

@@ -19,7 +19,7 @@ public class CubeMapCamera implements ICamera {
 	/**
 	 * Kameranın çizim yapabileceği en uzak mesafe.
 	 */
-	private static final float FAR_PLANE = 10000f;
+	private static final float FAR_PLANE = 50000f;
 	
 	/**
 	 * Görüş açısı (Field of View). Küp yüzeyleri çizildiği için 90 derece olması zorunludur.

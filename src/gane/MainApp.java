@@ -12,6 +12,7 @@ import terrain.FloraManager;
 public class MainApp {
 
 	public static boolean playMode = true;
+	public static boolean showOrientationDebug = false;
 	private static boolean paused = false;
 	private static boolean running = false;
 	private static RenderEngine renderEngine;
@@ -96,16 +97,12 @@ public class MainApp {
 		scene.GameObject bird = new scene.GameObject("res/DEFAULT_BIRD/DEF_BIRD.glb", "res/DEFAULT_BIRD/texture_0.png");
 		bird.getPosition().set(0, 0, 0); // Kuşu kameranın önüne koy
 		bird.setScale(0.5f); // Kuşu daha görünür olması için 2.5 kata çıkardık
-		default_controls.BirdPlayerController birdController = new default_controls.BirdPlayerController(camera,
-				terrain);
+		default_controls.BirdAIController birdController = new default_controls.BirdAIController(terrain);
 		birdController.setModelYawOffset(currentBirdYawOffset);
 		birdController.setModelPitchOffset(currentBirdPitchOffset);
 		birdController.setModelRollOffset(currentBirdRollOffset);
 		bird.addComponent(birdController);
 		scene.addEntity(bird);
-
-		// Kameranın başlangıçta kuşa odaklanmasını sağla
-		camera.setTarget(bird);
 
 		// Yapay Zekalı Diğer Kuşları Ekle (AI Birds)
 		java.util.Random rand = new java.util.Random();
@@ -261,8 +258,9 @@ public class MainApp {
 
 		// 10. Güneş (Sun) Dokusu ve Objesi
 		textures.Texture sunTex = textures.Texture.newTexture(new utils.MyFile("res/sun.png")).create();
-		sunRenderer.Sun sun = new sunRenderer.Sun(sunTex, 200.0f); // Uzaklık 1000'e çıktığı için boyut orantılı
+		sunRenderer.Sun sun = new sunRenderer.Sun(sunTex, 20.0f); // Uzaklık 1000'e çıktığı için boyut orantılı
 																	// büyütüldü
+
 		scene.setSun(sun);
 
 		// 11. Gemi (Ship) Ekleme
@@ -271,16 +269,36 @@ public class MainApp {
 		// parça halinde render edilecektir.
 		scene.GameObject ship = new scene.GameObject("res/DEFAULT_VEC_SHIP/fishing_boat_v.glb");
 		ship.getPosition().set(0, 5.0f, 30); // Gemiyi tam gözümüzün önüne, kuşun 30 birim uzağına koyalım
-		ship.getRotation().set(0, 0, 0); // GLB rotasyonu artık Entity seviyesinde çözülüyor
+		ship.getRotation().set(90, 90, 90); // Görsel dikleştirme
+		ship.getModelOffsetRot().set(0, 0, 0); // Görsel olarak burnunu arkaya çevir
+
 		ship.setScale(1.0f); // Boyutu sıfırladık
 		ship.setCullingRadius(50000.0f);
-		
+
 		default_controls.ShipController shipController = new default_controls.ShipController(camera, terrain);
 		ship.addComponent(shipController);
 		ship.getPosition().set(-15, 0, 0);
 		scene.addEntity(ship);
-		shipController.setActive(false); // Başlangıçta kuş aktif olsun
-		
+		shipController.setActive(true); // Başlangıçta gemi aktif olsun
+
+		// 12. Uçak Ekleme (Plane)
+		scene.GameObject plane = new scene.GameObject("res/DEFAULTMODELPLANE/Başlıksız.glb");
+		plane.getPosition().set(20, 10.0f, 0); // Geminin biraz sağında, havada başlasın
+		plane.getModelOffsetRot().set(-90, 0, 0); // Görsel dikleştirme (Fizik motorunu bozmaması için)
+		if (plane.getMultiMeshParts() != null) {
+			for (scene.GameObject part : plane.getMultiMeshParts()) {
+				part.getModelOffsetRot().set(-90, 0, 0);
+			}
+		}
+		plane.setScale(0.5f); // Boyutunu makul bir seviyeye getirelim
+		plane.getFirstPersonOffset().set(0, 3.5f, 5.0f); // Kokpit kamera konumu
+		plane.setCullingRadius(50000.0f);
+
+		default_controls.PlaneController planeController = new default_controls.PlaneController(camera, terrain);
+		plane.addComponent(planeController);
+		scene.addEntity(plane);
+		planeController.setActive(false); // Başlangıçta uçak pasif
+
 		/*
 		 * // 12. Balık Ekleme (Koi Fish) - Tekil Balık (Oyuncu Kontrollü)
 		 * scene.GameObject fish = new
@@ -317,10 +335,8 @@ public class MainApp {
 		 * scene.addEntity(aiFish);
 		 * }
 		 */
-		birdController.setActive(true);
-
-		// Kameranın başlangıçta kuşa odaklanmasını sağla
-		camera.setTarget(bird);
+		// Kameranın başlangıçta gemiye odaklanmasını sağla
+		camera.setTarget(ship);
 
 		long lastTime = System.nanoTime();
 
@@ -328,8 +344,8 @@ public class MainApp {
 		long timer = System.currentTimeMillis();
 		int currentFps = 0;
 
-		// POV için Player (Kuşu kullanıyoruz)
-		scene.Entity player = bird;
+		// POV için Player (Gemiyi kullanıyoruz)
+		scene.Entity player = ship;
 		boolean vKeyPressed = false;
 		String currentModeStr = "THIRD PERSON";
 
@@ -354,12 +370,29 @@ public class MainApp {
 		// UI Gizleme Kontrolü
 		boolean showUI = true;
 		boolean hKeyPressed = false;
+		boolean tKeyPressed = false;
+		boolean yKeyPressed = false; // ObjectViewer geçişi
+	
+		// Object Viewer Değişkenleri
+		boolean showObjectViewer = false;
+		int objectViewerIndex = 0;
+		boolean upArrowPressed = false;
+		boolean downArrowPressed = false;
 
+		float lastDelta = 0.016f;
 		// Ana oyun döngüsü
 		while (running && !Display.isCloseRequested()) {
 			long currentTime = System.nanoTime();
-			float delta = (currentTime - lastTime) / 1000000000.0f;
+			float rawDelta = (currentTime - lastTime) / 1000000000.0f;
 			lastTime = currentTime;
+			
+			// Delta Smoothing (Mikro Titremeleri / Stuttering Önlemek İçin)
+			// Eğer ani bir gecikme olursa fizik motoru çıldırmasın diye
+			if (rawDelta > 0.05f) {
+				rawDelta = 0.05f;
+			}
+			float delta = rawDelta * 0.2f + lastDelta * 0.8f;
+			lastDelta = delta;
 
 			// Su Mesh Wireframe (F3) - Bas-Çek kontrolü (Debounce)
 			if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_F3)) {
@@ -396,28 +429,54 @@ public class MainApp {
 					if (camera.getMode() == extra.Camera.CameraMode.FREE) {
 						camera.setMode(extra.Camera.CameraMode.FIRST_PERSON);
 						camera.setTarget(player);
-						currentModeStr = "FIRST PERSON (KUS)";
-						birdController.setActive(true);
+						currentModeStr = "FIRST PERSON (GEMI)";
+						shipController.setActive(true);
 					} else if (camera.getMode() == extra.Camera.CameraMode.FIRST_PERSON) {
 						camera.setMode(extra.Camera.CameraMode.RPG_THIRD_PERSON);
 						camera.setTarget(player);
-						currentModeStr = "THIRD PERSON (KUS)";
-						birdController.setActive(true);
+						currentModeStr = "THIRD PERSON (GEMI)";
+						shipController.setActive(true);
 					} else {
 						camera.setMode(extra.Camera.CameraMode.FREE);
 						camera.setTarget(null);
 						currentModeStr = "FREE";
-						birdController.setActive(false);
+						shipController.setActive(false);
+						planeController.setActive(false);
 					}
 				}
 			} else {
 				vKeyPressed = false;
 			}
 
+			// Araç Değiştirme (1 = Gemi, 2 = Uçak)
+			if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_1)) {
+				shipController.setActive(true);
+				planeController.setActive(false);
+				player = ship;
+				if (camera.getMode() != extra.Camera.CameraMode.FREE) {
+					camera.setTarget(ship);
+					currentModeStr = camera.getMode() == extra.Camera.CameraMode.FIRST_PERSON ? "FIRST PERSON (GEMI)"
+							: "THIRD PERSON (GEMI)";
+				}
+			}
+			if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_2)) {
+				shipController.setActive(false);
+				planeController.setActive(true);
+				player = plane;
+				if (camera.getMode() != extra.Camera.CameraMode.FREE) {
+					camera.setTarget(plane);
+					currentModeStr = camera.getMode() == extra.Camera.CameraMode.FIRST_PERSON ? "FIRST PERSON (UCAK)"
+							: "THIRD PERSON (UCAK)";
+				}
+			}
+
 			// Tüm nesneleri güncelle (Bileşenleri ve animasyonları çalıştırır)
 			for (int i = 0; i < scene.getAllEntities().size(); i++) {
 				scene.getAllEntities().get(i).update(delta);
 			}
+
+			// Kamerayı hareket ettir (Fizik güncellemelerinden SONRA olmalı, yoksa 1 frame geride kalır ve titrer!)
+			camera.move(delta);
 
 			// Chunk tabanli Flora uretimini ve Culling sistemini guncelle
 			FloraManager.update(scene);
@@ -516,8 +575,18 @@ public class MainApp {
 				hKeyPressed = false;
 			}
 
+			// Yön (Orientation) Debug Çizgileri Kontrolü (T Tuşu)
+			if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_T)) {
+				if (!tKeyPressed) {
+					showOrientationDebug = !showOrientationDebug;
+					tKeyPressed = true;
+				}
+			} else {
+				tKeyPressed = false;
+			}
+
 			// Hızlandır / Yavaşlat (Yukarı / Aşağı Ok Tuşları)
-			if (!timePaused) {
+			if (!timePaused && !showObjectViewer) {
 				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_UP)) {
 					dayNight.setTimeMultiplier(dayNight.getTimeMultiplier() + 500f * delta);
 				}
@@ -546,6 +615,43 @@ public class MainApp {
 			}
 			if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_I)) {
 				dayNight.setSunOrbitYaw(dayNight.getSunOrbitYaw() + 30.0f * delta);
+			}
+
+			// Object Viewer Aç/Kapa (Y tuşu)
+			if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_Y)) {
+				if (!yKeyPressed) {
+					showObjectViewer = !showObjectViewer;
+					yKeyPressed = true;
+				}
+			} else {
+				yKeyPressed = false;
+			}
+			
+			// Object Viewer Kontrolleri (Sadece Plane modeli için)
+			if (showObjectViewer && plane.getMultiMeshParts() != null && plane.getMultiMeshParts().size() > 0) {
+				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_UP)) {
+					if (!upArrowPressed) {
+						objectViewerIndex--;
+						if (objectViewerIndex < 0) objectViewerIndex = plane.getMultiMeshParts().size() - 1;
+						upArrowPressed = true;
+					}
+				} else {
+					upArrowPressed = false;
+				}
+				
+				if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_DOWN)) {
+					if (!downArrowPressed) {
+						objectViewerIndex++;
+						if (objectViewerIndex >= plane.getMultiMeshParts().size()) objectViewerIndex = 0;
+						downArrowPressed = true;
+					}
+				} else {
+					downArrowPressed = false;
+				}
+
+				// Seçili objeyi sürekli döndür (Test Amaçlı)
+				scene.GameObject selectedPart = plane.getMultiMeshParts().get(objectViewerIndex);
+				selectedPart.getModelOffsetRot().y += 100.0f * delta;
 			}
 
 			// Kus Offset Ayarlari (F1-F6)
@@ -634,7 +740,7 @@ public class MainApp {
 			}
 
 			// Kamerayı hareket ettir
-			camera.move();
+			camera.move(delta);
 
 			// Gece gündüz döngüsünü güncelle
 			dayNight.update(delta);
@@ -686,17 +792,45 @@ public class MainApp {
 				String orbitStr = String.format("%.0f", dayNight.getSunOrbitYaw());
 				uiText.drawText("Gunes Rotasyonu [U/I]: " + orbitStr + " derece", 20, 200, java.awt.Color.ORANGE);
 
-				/*
-				 * uiText.drawText("Gemi Scale [8 / 2]: " + String.format("%.4f",
-				 * ship.getScale()) + " | Yukseklik [J / K]",
-				 * 20, 230, java.awt.Color.MAGENTA);
-				 */
+				// Orientation Debug UI
+				uiText.drawText("Yon (Orientation) Debug [T]: " + (showOrientationDebug ? "ACIK" : "KAPALI"), 20, 230, java.awt.Color.PINK);
+				
+				uiText.drawText("Object Viewer [Y]: " + (showObjectViewer ? "ACIK" : "KAPALI"), 20, 260, java.awt.Color.MAGENTA);
+
+				// OBJECT VIEWER ÇİZİMİ
+				if (showObjectViewer && plane.getMultiMeshParts() != null) {
+					int startX = Display.getWidth() - 350;
+					int startY = 20;
+					uiText.drawText("--- OBJECT VIEWER (UCAK) ---", startX, startY, java.awt.Color.WHITE);
+					startY += 30;
+					
+					for (int i = 0; i < plane.getMultiMeshParts().size(); i++) {
+						scene.GameObject part = plane.getMultiMeshParts().get(i);
+						String partName = "Isimsiz Parca";
+						if (part.getModel() != null && part.getModel().getModelData() != null) {
+							partName = part.getModel().getModelData().getName();
+						}
+						
+						String line = i + ": " + partName;
+						java.awt.Color color = java.awt.Color.GRAY;
+						
+						if (i == objectViewerIndex) {
+							line = ">> " + line + " << (DONUYOR)";
+							color = java.awt.Color.GREEN;
+						}
+						
+						uiText.drawText(line, startX, startY, color);
+						startY += 20;
+					}
+				}
 
 				uiText.endUI();
 			}
 
 			// Ekranı güncelle
 			renderEngine.update();
+			org.lwjgl.opengl.Display.sync(60); // FPS'i 60'a sabitle (Micro-stutter'ı çözer!)
+			org.lwjgl.opengl.Display.update();
 		}
 
 		// Temizle ve kapat

@@ -332,10 +332,86 @@ public class MasterRenderer {
 		// 7. SualtÃ„Â± Kamera Efekti
 		renderUnderwaterOverlay(scene);
 
-		// 8. Hata AyÃ„Â±klama (Debug) - GÃƒÂ¼neÃ…Å¸i GÃƒÂ¶steren Ãƒâ€¡izgi
+		// 8. Hata Ayıklama (Debug) - Güneşi Gösteren Çizgi
 		if (!gane.MainApp.playMode) {
 			renderSunDebugLine(scene);
 		}
+
+		// 9. Obje Yön (Orientation) Debug Çizgileri
+		if (gane.MainApp.showOrientationDebug) {
+			renderOrientationDebugLines(scene);
+		}
+	}
+
+	/**
+	 * Sahnedeki tüm nesnelerin yön (orientation) matrislerini hesaplayıp
+	 * X, Y, Z eksenlerini görsel bir rehber olarak çizer.
+	 */
+	private void renderOrientationDebugLines(Scene scene) {
+		org.lwjgl.opengl.GL20.glUseProgram(0);
+		for (int i = 0; i <= 6; i++) {
+			org.lwjgl.opengl.GL13.glActiveTexture(org.lwjgl.opengl.GL13.GL_TEXTURE0 + i);
+			GL11.glDisable(GL11.GL_TEXTURE_2D);
+		}
+		GL11.glDisable(GL11.GL_LIGHTING);
+		GL11.glDisable(GL11.GL_DEPTH_TEST); 
+		GL11.glLineWidth(3.0f); 
+
+		GL11.glMatrixMode(GL11.GL_PROJECTION);
+		GL11.glPushMatrix();
+		java.nio.FloatBuffer projBuffer = org.lwjgl.BufferUtils.createFloatBuffer(16);
+		scene.getCamera().getProjectionViewMatrix().store(projBuffer);
+		projBuffer.flip();
+		GL11.glLoadMatrix(projBuffer);
+
+		GL11.glMatrixMode(GL11.GL_MODELVIEW);
+		
+		for (scene.Entity entity : scene.getAllEntities()) {
+			GL11.glPushMatrix();
+			GL11.glLoadIdentity();
+			
+			GL11.glTranslatef(entity.getPosition().x, entity.getPosition().y, entity.getPosition().z);
+			
+			// Önce Modelin kendi Offset rotasyonu (GLB için varsa) uygulanır
+			GL11.glRotatef(entity.getModelOffsetRot().y, 0, 1, 0);
+			GL11.glRotatef(entity.getModelOffsetRot().x, 1, 0, 0);
+			GL11.glRotatef(entity.getModelOffsetRot().z, 0, 0, 1);
+			
+			// Sonra Objenin yerel rotasyonu uygulanır
+			GL11.glRotatef(entity.getRotation().y, 0, 1, 0);
+			GL11.glRotatef(entity.getRotation().x, 1, 0, 0);
+			GL11.glRotatef(entity.getRotation().z, 0, 0, 1);
+
+			// X Ekseni - Kırmızı (Right)
+			GL11.glColor3f(1.0f, 0.0f, 0.0f);
+			GL11.glBegin(GL11.GL_LINES);
+			GL11.glVertex3f(0, 0, 0);
+			GL11.glVertex3f(5.0f, 0, 0);
+			GL11.glEnd();
+
+			// Y Ekseni - Yeşil (Up)
+			GL11.glColor3f(0.0f, 1.0f, 0.0f);
+			GL11.glBegin(GL11.GL_LINES);
+			GL11.glVertex3f(0, 0, 0);
+			GL11.glVertex3f(0, 5.0f, 0);
+			GL11.glEnd();
+
+			// Z Ekseni - Mavi (Forward/Backward - Engine spesifik yönü)
+			GL11.glColor3f(0.0f, 0.5f, 1.0f);
+			GL11.glBegin(GL11.GL_LINES);
+			GL11.glVertex3f(0, 0, 0);
+			GL11.glVertex3f(0, 0, 5.0f); // Engine Forward +Z direction visually
+			GL11.glEnd();
+			
+			GL11.glPopMatrix();
+		}
+
+		GL11.glMatrixMode(GL11.GL_PROJECTION);
+		GL11.glPopMatrix();
+		GL11.glMatrixMode(GL11.GL_MODELVIEW);
+
+		GL11.glEnable(GL11.GL_DEPTH_TEST);
+		GL11.glLineWidth(1.0f);
 	}
 
 	/**

@@ -54,6 +54,13 @@ public class Entity {
 	// Çarpışma kutusu
 	private physics.AABB boundingBox;
 	
+	// Kokpit / FPS Kamera Modu için offset konumu (X, Y, Z)
+	private final Vector3f firstPersonOffset = new Vector3f(0, 4.8f, 0);
+
+	public Vector3f getFirstPersonOffset() {
+		return firstPersonOffset;
+	}
+
 	/**
 	 * Yeni bir obje oluşturur.
 	 * 

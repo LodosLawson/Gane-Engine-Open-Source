@@ -46,7 +46,7 @@ public class GameExporter {
             sb.append("        gane.AppSettings.setup(1280, 720, false, \"Gane Engine - Exported Game\", null);\n");
             sb.append("\n");
             sb.append("        Camera camera = new Camera();\n");
-            sb.append("        camera.getPosition().set(0, 10, 0);\n");
+            sb.append("        camera.getPosition().set(0, 80, 0);\n");
             sb.append("\n");
             sb.append("        Scene scene = new Scene(camera);\n");
             sb.append("        RenderEngine renderEngine = RenderEngine.init();\n");
@@ -59,10 +59,16 @@ public class GameExporter {
                 }
                 if (env.has("terrain") && env.getJSONObject("terrain").getBoolean("enabled")) {
                     JSONObject t = env.getJSONObject("terrain");
-                    sb.append("        FlatTerrain ft = new FlatTerrain(2000, 2000);\n");
-                    sb.append(String.format(java.util.Locale.US, "        ft.generateProceduralTerrainV2(%.2ff, %.2ff, %d, %.2ff, %dL);\n",
-                        t.getFloat("maxHeight"), t.getFloat("roughness"), t.getInt("octaves"), t.getFloat("scale"), t.getLong("seed")));
-                    sb.append("        scene.addTerrain(ft);\n");
+                    if (t.has("customClass")) {
+                        String customClass = t.getString("customClass");
+                        sb.append("        " + customClass + " ft = new " + customClass + "();\n");
+                        sb.append("        scene.addTerrain(ft);\n");
+                    } else {
+                        sb.append("        FlatTerrain ft = new FlatTerrain(2000, 2000);\n");
+                        sb.append(String.format(java.util.Locale.US, "        ft.generateProceduralTerrainV2(%.2ff, %.2ff, %d, %.2ff, %dL);\n",
+                            t.getFloat("maxHeight"), t.getFloat("roughness"), t.getInt("octaves"), t.getFloat("scale"), t.getLong("seed")));
+                        sb.append("        scene.addTerrain(ft);\n");
+                    }
                 }
                 if (env.has("water") && env.getJSONObject("water").getBoolean("enabled")) {
                     sb.append(String.format(java.util.Locale.US, "        WaterTile water = new WaterTile(0, 0, %.2ff, 400);\n", env.getJSONObject("water").getFloat("height")));
@@ -83,6 +89,13 @@ public class GameExporter {
                         sb.append(String.format(java.util.Locale.US, "            go" + i + ".getPosition().set(%.2ff, %.2ff, %.2ff);\n", obj.getJSONObject("position").getFloat("x"), obj.getJSONObject("position").getFloat("y"), obj.getJSONObject("position").getFloat("z")));
                         sb.append(String.format(java.util.Locale.US, "            go" + i + ".getRotation().set(%.2ff, %.2ff, %.2ff);\n", obj.getJSONObject("rotation").getFloat("x"), obj.getJSONObject("rotation").getFloat("y"), obj.getJSONObject("rotation").getFloat("z")));
                         sb.append(String.format(java.util.Locale.US, "            go" + i + ".setScale(%.2ff);\n", obj.getFloat("scale")));
+                        if (obj.has("scripts")) {
+                            JSONArray scriptsArray = obj.getJSONArray("scripts");
+                            for (int j = 0; j < scriptsArray.length(); j++) {
+                                String scriptName = scriptsArray.getString(j);
+                                sb.append("            go" + i + ".addComponent(new " + scriptName + "());\n");
+                            }
+                        }
                         sb.append("            scene.addEntity(go" + i + ");\n");
                         sb.append("        } catch (Exception e) { e.printStackTrace(); }\n\n");
                     } else if (obj.getString("type").equals("CameraEntity")) {
@@ -106,9 +119,7 @@ public class GameExporter {
             sb.append("            for (scene.Entity e : scene.getAllEntities()) {\n");
             sb.append("                if (e instanceof scene.GameObject) ((scene.GameObject)e).update(delta);\n");
             sb.append("            }\n");
-            if (env != null && env.has("water") && env.getJSONObject("water").getBoolean("enabled")) {
-                sb.append("            water.update(delta);\n");
-            }
+            // Su animasyonu shader uzerinden (uTime) yonetildigi icin update cagirmiyoruz.
             sb.append("            renderEngine.renderScene(scene, delta);\n");
             sb.append("            renderEngine.update();\n");
             sb.append("        }\n");

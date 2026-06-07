@@ -164,6 +164,10 @@ public class EntityRenderer {
 						org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getRotation().z), AXIS_Z, transformMatrix, transformMatrix);
 					}
 					
+					if (entity.getBaseOffset().x != 0 || entity.getBaseOffset().y != 0 || entity.getBaseOffset().z != 0) {
+						org.lwjgl.util.vector.Matrix4f.translate(entity.getBaseOffset(), transformMatrix, transformMatrix);
+					}
+					
 					if (entity.getModelOffsetRot().x != 0) org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getModelOffsetRot().x), AXIS_X, transformMatrix, transformMatrix);
 					if (entity.getModelOffsetRot().y != 0) org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getModelOffsetRot().y), AXIS_Y, transformMatrix, transformMatrix);
 					if (entity.getModelOffsetRot().z != 0) org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getModelOffsetRot().z), AXIS_Z, transformMatrix, transformMatrix);
@@ -171,9 +175,6 @@ public class EntityRenderer {
 					if (entity.getScale() != 1.0f) {
 						scaleVector.set(entity.getScale(), entity.getScale(), entity.getScale());
 						org.lwjgl.util.vector.Matrix4f.scale(scaleVector, transformMatrix, transformMatrix);
-					}
-					if (entity.getBaseOffset().x != 0 || entity.getBaseOffset().y != 0 || entity.getBaseOffset().z != 0) {
-						org.lwjgl.util.vector.Matrix4f.translate(entity.getBaseOffset(), transformMatrix, transformMatrix);
 					}
 					
 					shader.transformationMatrix.loadMatrix(transformMatrix);
@@ -221,6 +222,10 @@ public class EntityRenderer {
 				if (entity.getRotation().x != 0) org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getRotation().x), AXIS_X, transformMatrix, transformMatrix);
 				if (entity.getRotation().z != 0) org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getRotation().z), AXIS_Z, transformMatrix, transformMatrix);
 				
+				if (entity.getBaseOffset().x != 0 || entity.getBaseOffset().y != 0 || entity.getBaseOffset().z != 0) {
+					org.lwjgl.util.vector.Matrix4f.translate(entity.getBaseOffset(), transformMatrix, transformMatrix);
+				}
+				
 				if (entity.getModelOffsetRot().x != 0) org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getModelOffsetRot().x), AXIS_X, transformMatrix, transformMatrix);
 				if (entity.getModelOffsetRot().y != 0) org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getModelOffsetRot().y), AXIS_Y, transformMatrix, transformMatrix);
 				if (entity.getModelOffsetRot().z != 0) org.lwjgl.util.vector.Matrix4f.rotate((float) Math.toRadians(entity.getModelOffsetRot().z), AXIS_Z, transformMatrix, transformMatrix);
@@ -228,9 +233,6 @@ public class EntityRenderer {
 				if (entity.getScale() != 1.0f) {
 					scaleVector.set(entity.getScale(), entity.getScale(), entity.getScale());
 					org.lwjgl.util.vector.Matrix4f.scale(scaleVector, transformMatrix, transformMatrix);
-				}
-				if (entity.getBaseOffset().x != 0 || entity.getBaseOffset().y != 0 || entity.getBaseOffset().z != 0) {
-					org.lwjgl.util.vector.Matrix4f.translate(entity.getBaseOffset(), transformMatrix, transformMatrix);
 				}
 				
 				shader.transformationMatrix.loadMatrix(transformMatrix);
@@ -339,6 +341,14 @@ public class EntityRenderer {
 			skin.getExtraInfoMap().bindToUnit(1);
 		}
 		shader.hasExtraMap.loadBoolean(skin.hasExtraMap());
+		shader.baseColorFactor.loadVec4(skin.getBaseColorFactor());
+		
+		if (skin.hasTransparency()) {
+			OpenGlUtils.enableAlphaBlending();
+		} else {
+			OpenGlUtils.disableBlending();
+		}
+		
 		shader.useFakeLighting.loadBoolean(skin.isUseFakeLighting());
 		OpenGlUtils.cullBackFaces(skin.isCullBackFaces());
 	}

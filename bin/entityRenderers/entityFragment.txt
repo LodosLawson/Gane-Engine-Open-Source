@@ -75,14 +75,17 @@ float smoothlyStep(float edge0, float edge1, float x){
     return t * t * (3.0 - 2.0 * t);
 }
 
+uniform vec4 baseColorFactor;
+
 // Shader'ın ana fonksiyonu. Her bir piksel için çalışır.
 void main(void){
 	
-	// Kaplama resminden alınan temel renk.
-	vec4 diffuseColour = texture(diffuseMap, pass_textureCoords);
+	// Kaplama resminden alınan temel renk ile PBR rengini (baseColorFactor) çarpıyoruz.
+	vec4 diffuseColour = texture(diffuseMap, pass_textureCoords) * baseColorFactor;
 	
-	// Eğer pikselin görünmezlik (alpha) değeri çok düşükse, pikseli çizme. (Örn: Yaprak kenarları)
-	if(diffuseColour.a < 0.5){
+	// Eğer pikselin görünmezlik (alpha) değeri çok düşükse, pikseli çizme.
+	// NOT: Tamamen şeffaf camlarda (örn: alpha=0.3) silinmemesi için < 0.05 olarak güncellendi.
+	if(diffuseColour.a < 0.05){
 		discard;
 	}
 	

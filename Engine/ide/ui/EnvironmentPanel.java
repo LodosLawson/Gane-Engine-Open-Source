@@ -40,6 +40,12 @@ public class EnvironmentPanel extends JPanel {
 		chkTerrain = new JCheckBox("Enable Terrain");
 		chkTerrain.addActionListener(e -> viewport.setTerrainEnabled(chkTerrain.isSelected()));
 		
+		JButton btnCustomTerrain = new JButton("Use Custom Terrain Script");
+		btnCustomTerrain.addActionListener(e -> {
+		    TerrainScriptEditorDialog dialog = new TerrainScriptEditorDialog((javax.swing.JFrame) javax.swing.SwingUtilities.getWindowAncestor(this), viewport);
+		    dialog.setVisible(true);
+		});
+		
 		chkOcean = new JCheckBox("Enable Ocean (Water)");
 		chkOcean.addActionListener(e -> {
 			viewport.setWaterEnabled(chkOcean.isSelected());
@@ -104,6 +110,7 @@ public class EnvironmentPanel extends JPanel {
 		});
 
 		add(chkTerrain);
+		add(btnCustomTerrain);
 		add(chkOcean);
 		add(btnWaterColor);
 		add(sliderWaveHeight);

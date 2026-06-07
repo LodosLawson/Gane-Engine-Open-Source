@@ -21,20 +21,20 @@ public class ShipController extends Component {
 	// FİZİK - Gaz Kolu (Throttle) ve Hız
 	private float targetThrottle = 0.0f;  // -1.0 (Tam Tornistan) ile 1.0 (Tam İleri) arası
 	private float currentThrottle = 0.0f; // Motor devrinin gerçek zamanlı konumu
+	private float currentSpeed = 0.0f;
+
+	// --- GEMİ FİZİĞİ AYARLARI ---
 	private float maxSpeedForward = 40.0f;
 	private float maxSpeedBackward = 15.0f;
-	private float currentSpeed = 0.0f;
-	
-	// İvmelenme ve Su Sürtünmesi (Drag)
-	private float engineAcceleration = 2.0f; // Motor devrinin (throttle) değişme hızı
-	private float speedAcceleration = 5.0f;  // Geminin gaza tepki verme hızı (Büyük gemiler yavaş hızlanır)
-	private float waterDrag = 1.5f;          // Su sürtünmesi, gaz kapalıyken yavaşlamayı sağlar
+	private float engineAcceleration = 0.3f; // Gaz kolunun itilme hızı (daha yavaş)
+	private float speedAcceleration = 4.0f; // Geminin hızlanma ivmesi (orijinali 10'du, daha ağır kalkış)
+	private float waterDrag = 1.5f; // Suyun yavaşlatma etkisi (orijinali 5'ti, daha fazla süzülme/kayma)
+	private float maxTurnRate = 20.0f; // Maksimum dönüş hızı (derece/saniye) (orijinali 25'ti)
+	private float rudderSpeed = 1.0f; // Dümenin dönme hızı (orijinali 2.0'dı, daha ağır dümen)
 
 	// FİZİK - Dümen (Rudder) ve Dönüş
 	private float targetRudderAngle = 0.0f;  // -1.0 (Tam İskele/Sol) ile 1.0 (Tam Sancak/Sağ) arası
 	private float currentRudderAngle = 0.0f; 
-	private float rudderSpeed = 2.0f;        // Dümenin dönme hızı
-	private float maxTurnRate = 25.0f;       // Saniyede max dönme derecesi (Tam hızda)
 	
 	// Görsel Efektler (Yatma / Roll ve Yunuslama / Pitch)
 	private float currentRoll = 0.0f;
@@ -42,6 +42,9 @@ public class ShipController extends Component {
 	
 	private float basePitch;
 	private float baseRoll;
+	
+	private float velocityYaw = 0.0f; // Su üzerindeki GİDİŞ yönümüz (Drift için)
+	private boolean firstPhysicsTick = true;
 	
 	private float modelYawOffset = 0.0f; // GEMİ YÖNÜ HATALIYSA KALİBRASYON (J ve L Tuşlarıyla)
 	private float waterHeight = 5.0f; // MainApp'teki okyanus yüksekliği
@@ -52,6 +55,30 @@ public class ShipController extends Component {
 	
 	public void setActive(boolean active) {
 		this.isActive = active;
+	}
+	
+	public void setModelYawOffset(float offset) {
+		this.modelYawOffset = offset;
+	}
+	
+	private java.util.List<scene.GameObject> propellers = new java.util.ArrayList<>();
+	
+	@Override
+	public void start() {
+		// Objeler sahnede ilk başladığında propeller (pervane) mesh'lerini bulalım
+		if (gameObject != null && gameObject.getMultiMeshParts() != null) {
+			for (scene.GameObject part : gameObject.getMultiMeshParts()) {
+				if (part.getModel() != null && part.getModel().getModelData() != null) {
+					String name = part.getModel().getModelData().getName();
+					if (name != null) {
+						String lower = name.toLowerCase();
+						if (lower.contains("prop") || lower.contains("pervane") || lower.contains("rotor")) {
+							propellers.add(part);
+						}
+					}
+				}
+			}
+		}
 	}
 
 	public ShipController(extra.Camera camera, terrain.flat.FlatTerrain terrain) {
@@ -95,14 +122,24 @@ public class ShipController extends Component {
 		
 		time += delta * floatSpeed;
 		
-		// Gemi Yönü Kalibrasyonu (J ve L Tuşları)
+		// Gemi Yönü Kalibrasyonu (J ve L Tuşları - Fiziksel Yön)
 		if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_J)) {
 			modelYawOffset -= 30.0f * delta;
-			System.out.println("KALİBRASYON -> Gemi Yönü Ofseti (Yaw): " + modelYawOffset);
+			System.out.println("KALİBRASYON -> Gemi Fizik Yönü (Yaw): " + modelYawOffset);
 		}
 		if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_L)) {
 			modelYawOffset += 30.0f * delta;
-			System.out.println("KALİBRASYON -> Gemi Yönü Ofseti (Yaw): " + modelYawOffset);
+			System.out.println("KALİBRASYON -> Gemi Fizik Yönü (Yaw): " + modelYawOffset);
+		}
+		
+		// Görsel Burun Kalibrasyonu (U ve O Tuşları - Görsel Yön)
+		if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_U)) {
+			gameObject.getModelOffsetRot().z -= 30.0f * delta;
+			System.out.println("KALİBRASYON -> Gemi Görsel Yönü (Offset Z): " + gameObject.getModelOffsetRot().z);
+		}
+		if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_O)) {
+			gameObject.getModelOffsetRot().z += 30.0f * delta;
+			System.out.println("KALİBRASYON -> Gemi Görsel Yönü (Offset Z): " + gameObject.getModelOffsetRot().z);
 		}
 		
 		// Derinlik Kalibrasyonu
@@ -181,23 +218,53 @@ public class ShipController extends Component {
 		
 		gameObject.getRotation().y += actualTurnRate * delta;
 		
+		// ----------------------------------------------------
+		// Gerçekçi Gemi Fiziği: Momentum ve Drift (Kayma)
+		// ----------------------------------------------------
+		float targetYaw = gameObject.getRotation().y + modelYawOffset;
+		
+		// İlk başladığında gidiş yönünü direkt burnun yönüne eşitle
+		if (firstPhysicsTick) {
+			velocityYaw = targetYaw;
+			firstPhysicsTick = false;
+		}
+		
+		// Açı farkını bul (-180 ile 180 arasına sıkıştır)
+		float yawDiff = targetYaw - velocityYaw;
+		while (yawDiff > 180) yawDiff -= 360;
+		while (yawDiff < -180) yawDiff += 360;
+		
+		// Gemi ne kadar hızlıysa (suya ne kadar tutunuyorsa), hareket yönü burnuna o kadar çabuk hizalanır
+		float driftRecoveryRate = 1.0f + (speedFactor * 1.5f); // Hızlandıkça daha çabuk toparlar
+		velocityYaw += yawDiff * driftRecoveryRate * delta;
+		
 		// YANA YATMA (Roll)
-		// Dönüş dışına doğru merkezkaç kuvveti. Hız ve dönüş oranıyla artar.
-		float targetRoll = -(actualTurnRate * speedFactor) * 0.4f;
+		// Dönüş dışına doğru merkezkaç kuvveti. yawDiff (kayma miktarı) arttıkça yatma artar.
+		float targetRoll = -(yawDiff) * speedFactor * 0.3f;
 		currentRoll += (targetRoll - currentRoll) * 2.0f * delta;
 		
 		// YUNUSLAMA (Pitch)
 		// Hızlanırken burun kalkar, yavaşlarken veya fren yaparken burun düşer
 		float accelerationForce = targetSpeed - currentSpeed;
-		float targetPitch = -accelerationForce * 0.5f; 
+		float targetPitch = -accelerationForce * 0.4f; 
 		currentPitch += (targetPitch - currentPitch) * 2.0f * delta;
 		
 		// POZİSYON GÜNCELLEMESİ
-		float movementYaw = gameObject.getRotation().y + modelYawOffset;
-		float yawRad = (float) Math.toRadians(movementYaw);
+		// Gemi burnuna (targetYaw) değil, su üstündeki süzülme/kayma yönüne (velocityYaw) doğru gider.
+		float yawRad = (float) Math.toRadians(velocityYaw);
 		
-		float dx = (float) (Math.sin(yawRad) * currentSpeed * delta);
+		float dx = (float) (-Math.sin(yawRad) * currentSpeed * delta);
 		float dz = (float) (-Math.cos(yawRad) * currentSpeed * delta);
+		
+		// PERVANE ANİMASYONU
+		// Gemi hareket ediyorsa pervaneleri döndür (Hız ile orantılı)
+		if (!propellers.isEmpty() && Math.abs(currentSpeed) > 0.1f) {
+			for (scene.GameObject prop : propellers) {
+				// Genellikle pervaneler Z ekseninde (ileri/geri) döner, ancak modele göre X veya Y de olabilir.
+				// Orijinal glb'ye göre bu eksen Z'dir.
+				prop.getModelOffsetRot().z += currentSpeed * 40.0f * delta;
+			}
+		}
 		
 		// Şimdilik arazi çarpışması kapalı (Karaya oturma iptal)
 		gameObject.getPosition().x += dx;

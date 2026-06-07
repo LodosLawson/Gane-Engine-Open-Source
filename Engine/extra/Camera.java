@@ -52,7 +52,7 @@ public class Camera implements ICamera {
 	/**
 	 * Uzak kırpma düzlemi. Kameraya bu değerden daha uzak olan objeler çizilmez.
 	 */
-	private static final float FAR_PLANE = 10000;
+	private static final float FAR_PLANE = 50000;
 
 	/**
 	 * Perspektif matrisi. 3D dünyayı 2D ekrana yansıtmak için kullanılır.
@@ -66,7 +66,11 @@ public class Camera implements ICamera {
 	private final Matrix4f projectionViewMatrix = new Matrix4f();
 	private final Vector3f pitchAxis = new Vector3f(1, 0, 0);
 	private final Vector3f yawAxis = new Vector3f(0, 1, 0);
+	private final Vector3f rollAxis = new Vector3f(0, 0, 1);
 	private final Vector3f negativePosition = new Vector3f();
+
+	private float fpPitchOffset = 0;
+	private float fpYawOffset = 0;
 
 	/**
 	 * Kameranın X, Y, Z koordinatlarındaki güncel pozisyonu.
@@ -132,28 +136,28 @@ public class Camera implements ICamera {
 	 * Kameranın her karede (frame) hareketini günceller.
 	 * Mevcut kamera moduna göre ilgili hareket fonksiyonunu çağırır.
 	 */
-	public void move() {
+	public void move(float delta) {
 		switch (currentMode) {
 			case FREE:
-				moveFree();
+				moveFree(delta);
 				break;
 			case FIRST_PERSON:
-				moveFirstPerson();
+				moveFirstPerson(delta);
 				break;
 			case RPG_THIRD_PERSON:
-				moveRPG();
+				moveRPG(delta);
 				break;
 			case ISOMETRIC:
-				moveIsometric();
+				moveIsometric(delta);
 				break;
 			case EDITOR:
-				moveEditor();
+				moveEditor(delta);
 				break;
 		}
 		updateViewMatrix();
 	}
 
-	private void moveFree() {
+	private void moveFree(float delta) {
 		if (Mouse.isButtonDown(1)) {
 			pitch -= Mouse.getDY() * 0.1f;
 			yaw += Mouse.getDX() * 0.1f;
@@ -164,9 +168,9 @@ public class Camera implements ICamera {
 			pitch = 90;
 		yaw %= 360;
 
-		float speed = 3f;
+		float speed = 50f * delta;
 		if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT))
-			speed = 1.5f;
+			speed = 25f * delta;
 
 		if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
 			position.x += speed * Math.sin(Math.toRadians(yaw));
@@ -194,29 +198,46 @@ public class Camera implements ICamera {
 		}
 	}
 
-	private void moveFirstPerson() {
+	private void moveFirstPerson(float delta) {
 		if (target == null)
 			return;
 
-		// FPS modunda kamera oyuncunun göz hizasında (Örn: y + 1.8f) durur
-		position.x = target.getPosition().x;
-		position.y = target.getPosition().y + 4.8f;
-		position.z = target.getPosition().z;
-
-		// Sadece fare hareketleriyle bakış açısı (Pitch, Yaw) değişir
+		// Sadece fare hareketleriyle bakış açısı (Pitch, Yaw) değişir (kamera kafası)
 		if (Mouse.isGrabbed() || Mouse.isButtonDown(0) || Mouse.isButtonDown(1)) {
-			pitch -= Mouse.getDY() * 0.1f;
-			yaw += Mouse.getDX() * 0.1f;
+			fpPitchOffset -= Mouse.getDY() * 0.1f;
+			fpYawOffset += Mouse.getDX() * 0.1f;
 
-			if (pitch < -90)
-				pitch = -90;
-			if (pitch > 90)
-				pitch = 90;
-			yaw %= 360;
+			if (fpPitchOffset < -90)
+				fpPitchOffset = -90;
+			if (fpPitchOffset > 90)
+				fpPitchOffset = 90;
+			fpYawOffset %= 360;
 		}
+
+		// Uçağın rotasyonuna kafa rotasyonunu (offset) ekliyoruz
+		this.pitch = target.getRotation().x + fpPitchOffset;
+		this.yaw = target.getRotation().y + fpYawOffset;
+		this.roll = target.getRotation().z; // Uçağın yatması kameraya yansır
+
+		// FPS modunda kamera oyuncunun kokpit offset'inde durur (rotasyona göre çevrilmiş)
+		Vector3f offset = target.getFirstPersonOffset();
+		
+		Matrix4f rotMat = new Matrix4f();
+		rotMat.setIdentity();
+		// Y, X, Z sırasıyla rotasyon uygula (Oyun motorunun dünya standartlarına göre)
+		Matrix4f.rotate((float) Math.toRadians(target.getRotation().y), yawAxis, rotMat, rotMat);
+		Matrix4f.rotate((float) Math.toRadians(target.getRotation().x), pitchAxis, rotMat, rotMat);
+		Matrix4f.rotate((float) Math.toRadians(target.getRotation().z), rollAxis, rotMat, rotMat);
+
+		org.lwjgl.util.vector.Vector4f rotatedOffset = new org.lwjgl.util.vector.Vector4f(offset.x, offset.y, offset.z, 1.0f);
+		Matrix4f.transform(rotMat, rotatedOffset, rotatedOffset);
+
+		position.x = target.getPosition().x + rotatedOffset.x;
+		position.y = target.getPosition().y + rotatedOffset.y;
+		position.z = target.getPosition().z + rotatedOffset.z;
 	}
 
-	private void moveRPG() {
+	private void moveRPG(float delta) {
 		if (target == null)
 			return;
 
@@ -225,8 +246,8 @@ public class Camera implements ICamera {
 		center.y = target.getPosition().z; // 2D y ekseni olarak z'yi kullanıyoruz
 
 		calculatePitch();
-		calculateAngleAroundPlayer();
-		calculateZoom();
+		calculateAngleAroundPlayer(delta);
+		calculateZoom(delta);
 
 		float horizontalDistance = calculateHorizontalDistance();
 		float verticalDistance = calculateVerticalDistance();
@@ -243,7 +264,7 @@ public class Camera implements ICamera {
 		yaw %= 360;
 	}
 
-	private void moveIsometric() {
+	private void moveIsometric(float delta) {
 		if (target == null)
 			return;
 
@@ -255,7 +276,7 @@ public class Camera implements ICamera {
 		yaw = 45;
 
 		distanceFromPlayer.setTarget(50);
-		distanceFromPlayer.update(1.0f);
+		distanceFromPlayer.update(delta);
 
 		float horizontalDistance = calculateHorizontalDistance();
 		float verticalDistance = calculateVerticalDistance();
@@ -270,7 +291,7 @@ public class Camera implements ICamera {
 		position.y = verticalDistance + target.getPosition().y;
 	}
 
-	private void moveEditor() {
+	private void moveEditor(float delta) {
 		// Editör modunda sadece Sağ Tık (1) basılıyken kamera hareket edebilir.
 		if (Mouse.isButtonDown(1)) {
 			// Bakış açısını (pitch, yaw) değiştir
@@ -379,6 +400,7 @@ public class Camera implements ICamera {
 		viewMatrix.setIdentity();
 		Matrix4f.rotate((float) Math.toRadians(pitch), pitchAxis, viewMatrix, viewMatrix);
 		Matrix4f.rotate((float) Math.toRadians(yaw), yawAxis, viewMatrix, viewMatrix);
+		Matrix4f.rotate((float) Math.toRadians(roll), rollAxis, viewMatrix, viewMatrix);
 		negativePosition.set(-position.x, -position.y, -position.z);
 		Matrix4f.translate(negativePosition, viewMatrix, viewMatrix);
 	}
@@ -479,30 +501,30 @@ public class Camera implements ICamera {
 	 * Fare tekerleği (scroll) çevrildiğinde kameranın yakınlaştırma (zoom)
 	 * seviyesini hesaplar.
 	 */
-	private void calculateZoom() {
+	private void calculateZoom(float delta) {
 		float targetZoom = distanceFromPlayer.getTarget();
 		float zoomLevel = Mouse.getDWheel() * 0.0008f * targetZoom;
 		targetZoom -= zoomLevel;
 		if (targetZoom < 1) {
 			targetZoom = 1;
-		} else if (targetZoom > 20) {
-			targetZoom = 20;
+		} else if (targetZoom > 500) {
+			targetZoom = 500;
 		}
 		distanceFromPlayer.setTarget(targetZoom);
-		distanceFromPlayer.update(0.01f);
+		distanceFromPlayer.update(delta);
 	}
 
 	/**
 	 * Farenin sol tuşuna basılıp sürüklendiğinde kameranın merkez etrafında dönüş
 	 * açısını hesaplar.
 	 */
-	private void calculateAngleAroundPlayer() {
+	private void calculateAngleAroundPlayer(float delta) {
 		if (Mouse.isButtonDown(0) || Mouse.isButtonDown(1)) {
 			float angleChange = Mouse.getDX() * 0.3f;
 			angleAroundPlayer.increaseTarget(-angleChange);
 		} else if (Keyboard.isKeyDown(Keyboard.KEY_R)) {
-			angleAroundPlayer.increaseTarget(0.05f);
+			angleAroundPlayer.increaseTarget(100.0f * delta);
 		}
-		angleAroundPlayer.update(0.01f);
+		angleAroundPlayer.update(delta);
 	}
 }

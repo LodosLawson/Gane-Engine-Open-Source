@@ -13,7 +13,12 @@ import scene.Component;
 
 public class RuntimeCompiler {
 
+	// Eski metod (Geriye uyumluluk icin)
 	public static Component compileAndLoad(String className, String sourceCode) throws Exception {
+		return (Component) compileAndLoad(className, sourceCode, Component.class);
+	}
+	
+	public static Object compileAndLoad(String className, String sourceCode, Class<?> expectedSuperClass) throws Exception {
 		// 1. Dosya yollarini hazirla
 		File sourceDir = new File(System.getProperty("user.dir"), "src/scripts");
 		if (!sourceDir.exists()) {
@@ -53,7 +58,6 @@ public class RuntimeCompiler {
 		URLClassLoader classLoader = URLClassLoader.newInstance(new URL[]{new File(binPath).toURI().toURL()});
 		
 		// Eger paket tanimlandiysa (ornegin scripts), paketi de className'e dahil etmeliyiz.
-		// Biz simdilik kolaylik olmasi adina kodun icinde "package scripts;" varsa adini ona gore ayarlayacagiz.
 		String fullClassName = className;
 		if (sourceCode.contains("package scripts;")) {
 			fullClassName = "scripts." + className;
@@ -61,11 +65,11 @@ public class RuntimeCompiler {
 		
 		Class<?> loadedClass = Class.forName(fullClassName, true, classLoader);
 		
-		// 7. Eger bu bir Component ise dondur
-		if (Component.class.isAssignableFrom(loadedClass)) {
-			return (Component) loadedClass.getDeclaredConstructor().newInstance();
+		// 7. Kontrol et ve instance dondur
+		if (expectedSuperClass.isAssignableFrom(loadedClass)) {
+			return loadedClass.getDeclaredConstructor().newInstance();
 		} else {
-			throw new RuntimeException("Yazdiginiz sinif scene.Component sinifindan miras (extends) almalidir!");
+			throw new RuntimeException("Yazdiginiz sinif " + expectedSuperClass.getName() + " sinifindan miras almalidir!");
 		}
 	}
 }

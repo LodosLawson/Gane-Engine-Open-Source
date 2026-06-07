@@ -227,6 +227,19 @@ public class ViewportCanvas extends Canvas {
 	public FlatTerrain getTerrain() { return terrain; }
 	public void setTerrain(FlatTerrain t) { this.terrain = t; }
 	
+	private String customTerrainClassName = null;
+	public String getCustomTerrainClassName() { return customTerrainClassName; }
+	public void setCustomTerrain(FlatTerrain t, String className) {
+	    enqueue(() -> {
+	        if (this.terrain != null) {
+	            scene.getTerrains().remove(this.terrain);
+	        }
+	        this.terrain = t;
+	        this.customTerrainClassName = className;
+	        scene.addTerrain(this.terrain);
+	    });
+	}
+	
 	public void setWaterEnabled(boolean enabled) {
 		enqueue(() -> {
 			if (enabled) {

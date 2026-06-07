@@ -19,6 +19,7 @@ public class ModelData {
 	private byte[] embeddedTextureData;
 	private boolean doubleSided = false;
 	private boolean transparent = false;
+	private org.lwjgl.util.vector.Vector4f baseColorFactor = new org.lwjgl.util.vector.Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
 
 	private String name;
 	private scene.animation.Joint rootJoint;
@@ -109,6 +110,14 @@ public class ModelData {
 
 	public void setTransparent(boolean transparent) {
 		this.transparent = transparent;
+	}
+
+	public org.lwjgl.util.vector.Vector4f getBaseColorFactor() {
+		return baseColorFactor;
+	}
+
+	public void setBaseColorFactor(org.lwjgl.util.vector.Vector4f baseColorFactor) {
+		this.baseColorFactor = baseColorFactor;
 	}
 
 	public float[] getJointIds() {

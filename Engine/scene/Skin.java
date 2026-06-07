@@ -26,6 +26,9 @@ public class Skin {
 	// Doku atlasındaki (Texture Atlas) satır/sütun sayısı (Varsayılan 1)
 	private int numberOfRows = 1;
 	
+	// PBR Base Color (R, G, B, A) değeri
+	private org.lwjgl.util.vector.Vector4f baseColorFactor = new org.lwjgl.util.vector.Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
+	
 	/**
 	 * Yeni bir materyal (Skin) oluşturur.
 	 * 
@@ -78,6 +81,14 @@ public class Skin {
 	/** @return Bu objenin özel bir ekstra haritası (Extra Info Map) var mı? */
 	public boolean hasExtraMap(){
 		return extraInfoMap!=null;
+	}
+
+	public org.lwjgl.util.vector.Vector4f getBaseColorFactor() {
+		return baseColorFactor;
+	}
+
+	public void setBaseColorFactor(org.lwjgl.util.vector.Vector4f baseColorFactor) {
+		this.baseColorFactor = baseColorFactor;
 	}
 	
 	/** @return Objeye renk veren ana kaplamayı (Diffuse) döndürür */

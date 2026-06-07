@@ -94,6 +94,7 @@ public class GameObject extends Entity {
 				
 				skin.setCullBackFaces(!model.getModelData().isDoubleSided());
 				skin.setTransparent(model.getModelData().isTransparent());
+				skin.setBaseColorFactor(model.getModelData().getBaseColorFactor());
 				
 				child.setSkin(skin);
 				child.getModelOffsetRot().set(0, 0, 0); // GLB objelerinin yan yatmaması için sıfırlandı
@@ -170,6 +171,19 @@ public class GameObject extends Entity {
 			}
 		}
 		return null;
+	}
+
+	/** Objeye eklenmis ozel scriptlerin sinif isimlerini dondurur (JSON Kaydi icin) */
+	public List<String> getScriptClassNames() {
+		List<String> scriptNames = new ArrayList<>();
+		for (Component c : components) {
+			String name = c.getClass().getName();
+			// Anonim siniflari (ornegin GameObject$1 olan Animator) atliyoruz
+			if (!name.contains("$") && name.startsWith("scripts.")) {
+				scriptNames.add(name);
+			}
+		}
+		return scriptNames;
 	}
 
 	/** Oyun döngüsü başladığında objenin sahneye girdiği ilk an çalışır */

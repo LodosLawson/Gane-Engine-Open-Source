@@ -269,6 +269,22 @@ public class GLBFileLoader {
                         
                         if (mat.has("pbrMetallicRoughness")) {
                             org.json.JSONObject pbr = mat.getJSONObject("pbrMetallicRoughness");
+                            
+                            if (pbr.has("baseColorFactor")) {
+                                org.json.JSONArray colorArr = pbr.getJSONArray("baseColorFactor");
+                                org.lwjgl.util.vector.Vector4f color = new org.lwjgl.util.vector.Vector4f(
+                                        (float)colorArr.getDouble(0),
+                                        (float)colorArr.getDouble(1),
+                                        (float)colorArr.getDouble(2),
+                                        (float)colorArr.getDouble(3));
+                                modelData.setBaseColorFactor(color);
+                                
+                                // Eğer alpha < 1.0 ise otomatik transparent yap
+                                if (color.w < 0.99f) {
+                                    modelData.setTransparent(true);
+                                }
+                            }
+                            
                             if (pbr.has("baseColorTexture")) {
                                 int texIndex = pbr.getJSONObject("baseColorTexture").getInt("index");
                                 org.json.JSONArray textures = gltf.getJSONArray("textures");

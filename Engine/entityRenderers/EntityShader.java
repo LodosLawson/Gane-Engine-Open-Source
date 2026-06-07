@@ -35,6 +35,7 @@ public class EntityShader extends ShaderProgram {
 	 * Modelde ekstra bir kaplama haritasÄ± olup olmadÄ±ÄŸÄ±nÄ± belirten boolean (mantÄ±ksal) deÄŸiÅŸken.
 	 */
 	protected UniformBoolean hasExtraMap = new UniformBoolean("hasExtraMap");
+	protected UniformVec4 baseColorFactor = new UniformVec4("baseColorFactor");
 	protected UniformBoolean useFakeLighting = new UniformBoolean("useFakeLighting");
 	
 	/**
@@ -117,6 +118,7 @@ public class EntityShader extends ShaderProgram {
 		list.add(diffuseMap);
 		list.add(extraMap);
 		list.add(hasExtraMap);
+		list.add(baseColorFactor);
 		list.add(useFakeLighting);
 		list.add(lightDirection);
 		list.add(lightColor);
