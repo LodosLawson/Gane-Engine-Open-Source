@@ -4,22 +4,45 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 
 /**
- * OpenGL'in çeşitli durumlarını (state) performanslı bir şekilde yönetmek için yardımcı sınıf.
- * Gereksiz glEnable/glDisable çağrılarının önüne geçerek sistemin o anki durumunu önbelleğe (cache) alır.
+ * OpenGL'in çeşitli durumlarını (state) performanslı bir şekilde yönetmek için oluşturulmuş yardımcı sınıf.
+ * Gereksiz glEnable/glDisable çağrılarının önüne geçerek sistemin o anki durumunu önbellekte (cache) tutar.
+ * Ekran kartına sadece gerçekten bir durum değiştiğinde komut göndererek performansı (FPS) artırır.
+ * 
+ * <p><b>Kullanım Örneği:</b></p>
+ * <pre>
+ * {@code
+ * // Saydam objeleri (su, cam vb.) çizmeden önce harmanlamayı aç ve arka yüzleri çizmeyi kapat
+ * OpenGlUtils.enableAlphaBlending();
+ * OpenGlUtils.cullBackFaces(false);
+ * 
+ * renderer.renderTransparentObjects();
+ * 
+ * // Tekrar varsayılan ayarlara dön
+ * OpenGlUtils.disableBlending();
+ * OpenGlUtils.cullBackFaces(true);
+ * }
+ * </pre>
  */
 public class OpenGlUtils {
 	
-	// Geçerli durumları hafızada tutan değişkenler
-	private static boolean cullingBackFace = false; // Arka yüz gizleme aktif mi?
-	private static boolean inWireframe = false;     // Tel kafes çizim (Wireframe) aktif mi?
-	private static boolean isAlphaBlending = false; // Normal saydamlık harmanlaması aktif mi?
-	private static boolean additiveBlending = false;// Katkısal (additive) harmanlama aktif mi?
-	private static boolean antialiasing = false;    // Kenar yumuşatma (Multisample) aktif mi?
-	private static boolean depthTesting = false;    // Derinlik testi (Z-Buffer) aktif mi?
+	/** Arka yüz gizleme (Back-face Culling) aktif mi? */
+	private static boolean cullingBackFace = false; 
+	/** Tel kafes çizim (Wireframe Mode) aktif mi? */
+	private static boolean inWireframe = false;     
+	/** Normal saydamlık harmanlaması (Alpha Blending) aktif mi? */
+	private static boolean isAlphaBlending = false; 
+	/** Katkısal harmanlama (Additive Blending) aktif mi? */
+	private static boolean additiveBlending = false;
+	/** Kenar yumuşatma (Multisampling / Antialiasing) aktif mi? */
+	private static boolean antialiasing = false;    
+	/** Derinlik testi (Z-Buffer Depth Test) aktif mi? */
+	private static boolean depthTesting = false;    
 
 	/**
-	 * Multisample (Kenar yumuşatma) modunu açar veya kapatır.
-	 * @param enable true ise aç, false ise kapat
+	 * Multisample (Kenar yumuşatma - Antialiasing) modunu açar veya kapatır.
+	 * Tırtıklı kenarları pürüzsüzleştirir.
+	 * 
+	 * @param enable true ise kenar yumuşatmayı aç, false ise kapat.
 	 */
 	public static void antialias(boolean enable) {
 		if (enable && !antialiasing) {
@@ -33,7 +56,8 @@ public class OpenGlUtils {
 
 	/**
 	 * Normal saydamlık (Alpha Blending) harmanlamasını açar.
-	 * Arkasındaki nesnelerle opaklık oranında karışım sağlar.
+	 * Çizilen objenin saydamlık (alpha) değerine göre arkasındaki nesnelerle renkleri karıştırır.
+	 * Cam, su veya yarı saydam parçacıklar için kullanılır.
 	 */
 	public static void enableAlphaBlending() {
 		if (!isAlphaBlending) {
@@ -46,7 +70,8 @@ public class OpenGlUtils {
 
 	/**
 	 * Katkısal harmanlamayı (Additive Blending) açar.
-	 * Parlama efektleri (örn: Lens Flare, Güneş) için renkleri arkadaki piksellerin rengine ekler.
+	 * Çizilen nesnenin renk değerlerini, arkasında kalan piksellerin rengine doğrudan toplar (ekler).
+	 * Parlama efektleri, ateş, lazer, lens flare veya büyü efektleri için kullanılır.
 	 */
 	public static void enableAdditiveBlending() {
 		if (!additiveBlending) {
@@ -58,7 +83,8 @@ public class OpenGlUtils {
 	}
 
 	/**
-	 * Herhangi bir harmanlama (Blending) işlemi açıksa kapatır.
+	 * Herhangi bir harmanlama (Alpha veya Additive Blending) işlemi açıksa kapatır.
+	 * Katı (saydam olmayan) objeleri çizmeden önce çağrılmalıdır.
 	 */
 	public static void disableBlending() {
 		if (isAlphaBlending || additiveBlending) {
@@ -70,7 +96,9 @@ public class OpenGlUtils {
 	
 	/**
 	 * Derinlik testini (Z-Buffer depth test) açar veya kapatır.
-	 * @param enable true ise aç, false ise kapat
+	 * Açık olduğunda uzaktaki objelerin, yakındaki objelerin önüne çizilmesini engeller.
+	 * 
+	 * @param enable true ise derinlik testini aç, false ise kapat.
 	 */
 	public static void enableDepthTesting(boolean enable){
 		if(enable && !depthTesting){
@@ -84,8 +112,11 @@ public class OpenGlUtils {
 
 	/**
 	 * Arka yüz gizlemeyi (Back-face Culling) açar veya kapatır.
-	 * Sadece kameraya dönük olan yüzeyleri çizerek performansı artırır.
-	 * @param cull true ise aç, false ise kapat
+	 * Sadece kameraya dönük olan yüzeyleri çizerek işlenecek poligon sayısını yarıya indirir 
+	 * ve performansı artırır. Ancak iki tarafı da görünmesi gereken ince objeler (örn: çimen, yaprak)
+	 * çizilecekse geçici olarak kapatılmalıdır.
+	 * 
+	 * @param cull true ise arka yüzleri gizle (performans artar), false ise her iki yüzü de çiz.
 	 */
 	public static void cullBackFaces(boolean cull) {
 		if (cull && !cullingBackFace) {
@@ -99,8 +130,10 @@ public class OpenGlUtils {
 	}
 
 	/**
-	 * Modelleri içleri dolu değil de sadece çizgiler halinde (Tel Kafes / Wireframe) çizdirir.
-	 * @param goWireframe true ise tel kafes modu, false ise normal katı (solid) mod
+	 * Modelleri içleri dolu (solid) olarak değil de sadece çizgiler halinde (Tel Kafes / Wireframe) çizdirir.
+	 * Genellikle hata ayıklama (debug) veya hit-box gösterimi için kullanılır.
+	 * 
+	 * @param goWireframe true ise tel kafes moduna geç, false ise normal (dolu) katı çizim moduna dön.
 	 */
 	public static void goWireframe(boolean goWireframe) {
 		if (goWireframe && !inWireframe) {

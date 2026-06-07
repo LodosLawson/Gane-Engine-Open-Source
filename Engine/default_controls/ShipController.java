@@ -79,19 +79,16 @@ public class ShipController extends Component {
 				}
 			}
 		}
+
+		if (gameObject != null) {
+			basePitch = gameObject.getRotation().x;
+			baseRoll = gameObject.getRotation().z;
+		}
 	}
 
 	public ShipController(extra.Camera camera, terrain.flat.FlatTerrain terrain) {
 		this.camera = camera;
 		this.terrain = terrain;
-	}
-
-	@Override
-	public void start() {
-		if (gameObject != null) {
-			basePitch = gameObject.getRotation().x;
-			baseRoll = gameObject.getRotation().z;
-		}
 	}
 
 	@Override

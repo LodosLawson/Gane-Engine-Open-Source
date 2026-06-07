@@ -3,6 +3,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "TetrisApp",
+            "request": "launch",
+            "mainClass": "tetris3d.TetrisApp",
+            "projectName": "gane"
+        },
+        {
+            "type": "java",
             "name": "MyGameLauncher",
             "request": "launch",
             "mainClass": "gane.MyGameLauncher",

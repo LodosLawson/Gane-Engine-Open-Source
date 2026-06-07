@@ -10,21 +10,39 @@ import java.nio.file.Paths;
 
 /**
  * Projedeki dosyaları esnek ve taşınabilir bir şekilde okumak için oluşturulmuş yardımcı sınıf.
- * Önce Java projesinin kaynaklarına (ResourceAsStream), ardından fiziksel dosya sistemine (user.dir) bakar.
+ * Önce Java projesinin derlenmiş kaynaklarına (Classpath/ResourceAsStream), ardından fiziksel 
+ * dosya sistemine (user.dir) bakar. Bu sayede oyun hem JAR olarak paketlendiğinde hem de 
+ * IDE içerisinde çalışırken dosya yollarında sorun yaşamaz.
+ * 
+ * <p><b>Kullanım Örneği:</b></p>
+ * <pre>
+ * {@code
+ * // "res/textures/player.png" dosyasını okumak için
+ * MyFile textureFile = new MyFile("res", "textures", "player.png");
+ * 
+ * // Veya tek bir string ile
+ * MyFile modelFile = new MyFile("res/models/tree.obj");
+ * 
+ * // Dosyayı okumak için InputStream al
+ * InputStream in = textureFile.getInputStream();
+ * }
+ * </pre>
  */
 public class MyFile {
 	
-	// Dosya yol ayracı (her platformda uyumlu olması için "/" kullanılmış)
+	/** Dosya yol ayracı (Her platformda uyumlu olması ve JAR içinde çalışması için "/" kullanılmıştır) */
 	private static final String FILE_SEPARATOR = "/";
 
-	// Tam dosya yolu
+	/** Dosyanın projedeki veya sistemdeki tam yolu */
 	private String path;
-	// Dosyanın sonundaki isim
+	
+	/** Dosyanın sadece kendi ismi ve uzantısı (Örn: "model.obj") */
 	private String name;
 
 	/**
-	 * Dosya yolundan yeni bir MyFile oluşturur.
-	 * @param path Okunacak dosya yolu
+	 * Tek bir dosya yolundan yeni bir MyFile nesnesi oluşturur.
+	 * 
+	 * @param path Okunacak dosya yolu (Örn: "res/shaders/vertexShader.txt")
 	 */
 	public MyFile(String path) {
 		this.path = FILE_SEPARATOR + path;
@@ -33,8 +51,9 @@ public class MyFile {
 	}
 
 	/**
-	 * Dosya yolunu parçalar halinde alarak birleştirir ve MyFile oluşturur.
-	 * @param paths Klasör ve dosya isimleri dizisi
+	 * Klasör ve dosya isimlerini parça parça alarak birleştirir ve tek bir dosya yolu oluşturur.
+	 * 
+	 * @param paths Klasör ve dosya isimleri dizisi (Örn: "res", "textures", "diffuse.png")
 	 */
 	public MyFile(String... paths) {
 		this.path = "";
@@ -46,9 +65,10 @@ public class MyFile {
 	}
 
 	/**
-	 * Mevcut bir dizin içindeki bir dosyayı temsil edecek MyFile oluşturur.
-	 * @param file Dizin (MyFile)
-	 * @param subFile Dosya ismi
+	 * Mevcut bir dizin (MyFile) altındaki bir dosyayı temsil edecek yeni bir MyFile oluşturur.
+	 * 
+	 * @param file İçinde arama yapılacak üst klasör dizini
+	 * @param subFile Klasörün içindeki dosyanın ismi
 	 */
 	public MyFile(MyFile file, String subFile) {
 		this.path = file.path + FILE_SEPARATOR + subFile;
@@ -56,9 +76,10 @@ public class MyFile {
 	}
 	
 	/**
-	 * Mevcut bir dizin içindeki alt klasör/dosya hiyerarşisini MyFile olarak oluşturur.
-	 * @param file Dizin (MyFile)
-	 * @param subFiles Alt dosya yolları
+	 * Mevcut bir dizin içindeki derinlemesine alt klasör/dosya hiyerarşisini MyFile olarak oluşturur.
+	 * 
+	 * @param file Üst klasör dizini (MyFile)
+	 * @param subFiles Alt dosya yolları dizisi
 	 */
 	public MyFile(MyFile file, String... subFiles) {
 		this.path = file.path;
@@ -69,7 +90,11 @@ public class MyFile {
 		this.name = dirs[dirs.length - 1];
 	}
 
-	/** @return Dosyanın tam yolu */
+	/** 
+	 * Dosyanın tam yolunu döndürür.
+	 * 
+	 * @return Dosya yolu stringi.
+	 */
 	public String getPath() {
 		return path;
 	}
@@ -80,26 +105,27 @@ public class MyFile {
 	}
 
 	/**
-	 * Dosyanın içeriğini okumak için bir InputStream döndürür.
-	 * Önce projenin classpath'inde (Resource) arar, bulamazsa işletim sisteminin dosya yollarına bakar.
+	 * Dosyanın içeriğini bayt (byte) olarak okumak için bir InputStream döndürür.
+	 * <p>Önce projenin classpath'inde (Resource) arar. Bu işlem JAR dosyalarından okuma yaparken çok önemlidir.
+	 * Bulamazsa işletim sisteminin fiziksel dosya yollarına (user.dir) bakar.</p>
 	 * 
-	 * @return Dosya veri akışı (InputStream)
+	 * @return Dosya veri akışı (InputStream) veya dosya bulunamazsa null
 	 */
 	public InputStream getInputStream() {
 		String cpPath = path.startsWith(FILE_SEPARATOR) ? path.replace(FILE_SEPARATOR, "/") : "/" + path.replace(FILE_SEPARATOR, "/");
 		InputStream in = MyFile.class.getResourceAsStream(cpPath);
 		if (in != null) {
-			// Classpath'te bulunduysa döndür
+			// Classpath'te bulunduysa döndür (JAR içi okumalar için)
 			return in;
 		}
-		// Classpath'te yoksa, fiziksel çalışma dizininde ara
+		// Classpath'te yoksa, fiziksel çalışma dizininde (IDE veya kullanıcı dizini) ara
 		String relativePath = path.startsWith(FILE_SEPARATOR) ? path.substring(1) : path;
 		Path fsPath = Paths.get(System.getProperty("user.dir"), relativePath.replace(FILE_SEPARATOR, System.getProperty("file.separator")));
 		if (Files.exists(fsPath)) {
 			try {
 				return Files.newInputStream(fsPath);
 			} catch (IOException e) {
-				// fall through to return null (Hata durumunda alttaki null döndürmeye geç)
+				// Hata durumunda alttaki null döndürme satırına geç (Fall through)
 			}
 		}
 		return null;
@@ -107,9 +133,10 @@ public class MyFile {
 
 	/**
 	 * Dosyayı metin (text) olarak satır satır okumak için bir BufferedReader döndürür.
+	 * Genellikle .obj dosyaları veya .txt shader kodlarını okumak için kullanılır.
 	 * 
-	 * @return BufferedReader nesnesi
-	 * @throws Exception Dosya okunamıyorsa hata fırlatır
+	 * @return Metin okuyucu (BufferedReader) nesnesi
+	 * @throws Exception Dosya fiziksel olarak yoksa veya okuma izni alınamazsa fırlatılır
 	 */
 	public BufferedReader getReader() throws Exception {
 		try {
@@ -117,12 +144,16 @@ public class MyFile {
 			BufferedReader reader = new BufferedReader(isr);
 			return reader;
 		} catch (Exception e) {
-			System.err.println("Couldn't get reader for " + path);
+			System.err.println(path + " dosyasi okunamadi (Reader olusturulamadi).");
 			throw e;
 		}
 	}
 
-	/** @return Dosyanın sadece ismi ve uzantısı (Örn: "image.png") */
+	/** 
+	 * Dosyanın sadece ismini ve uzantısını döndürür.
+	 * 
+	 * @return Dosya ismi (Örn: "image.png")
+	 */
 	public String getName() {
 		return name;
 	}

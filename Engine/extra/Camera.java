@@ -134,7 +134,17 @@ public class Camera implements ICamera {
 
 	/**
 	 * Kameranın her karede (frame) hareketini günceller.
+	 * Geriye dönük uyumluluk (eski örnekler) için delta timesız çalışan versiyonudur.
+	 */
+	public void move() {
+		move(utils.DisplayManager.getFrameTime());
+	}
+
+	/**
+	 * Kameranın her karede (frame) hareketini günceller.
 	 * Mevcut kamera moduna göre ilgili hareket fonksiyonunu çağırır.
+	 * 
+	 * @param delta İki kare arası geçen zaman (saniye)
 	 */
 	public void move(float delta) {
 		switch (currentMode) {

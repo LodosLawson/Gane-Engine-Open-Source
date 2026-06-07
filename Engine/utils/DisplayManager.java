@@ -160,7 +160,7 @@ public class DisplayManager {
 	/**
 	 * @return İki kare arasında geçen süre (Saniye)
 	 */
-	public float getFrameTime() {
+	public static float getFrameTime() {
 		return delta;
 	}
 
