@@ -1,0 +1,72 @@
+#version 330
+
+in vec3 in_position;
+in vec2 in_textureCoords;
+in vec3 in_normal;
+
+// Instanced Attributes (Matrix 4x4 requires 4 vec4s in OpenGL)
+in mat4 transformationMatrix;
+in float textureOffsetIndex;
+
+out vec2 pass_textureCoords;
+out float pass_brightness;
+out vec2 pass_pos;
+out vec3 pass_worldPos;
+out vec3 pass_normal;
+out float pass_distanceToCamera;
+out vec4 pass_shadowCoords;
+
+uniform mat4 projectionViewMatrix;
+uniform vec3 lightDirection;
+uniform float lightBrightness;
+uniform float ambientLight;
+uniform vec4 plane;
+uniform float useFakeLighting;
+uniform vec3 cameraPosition;
+uniform mat4 toShadowMapSpace;
+uniform float numberOfRows;
+uniform float uTime;
+uniform vec2 uWindDir;
+void main(void){
+
+	vec4 worldPosition = transformationMatrix * vec4(in_position, 1.0);
+	
+	float windStrength = length(uWindDir);
+	if (windStrength > 0.0) {
+	    float heightOffset = worldPosition.y - transformationMatrix[3][1];
+	    if (heightOffset > 0.1) {
+	        float wave = sin(uTime * 2.0 + worldPosition.x * 0.1 + worldPosition.z * 0.1) + 
+	                     cos(uTime * 1.5 + worldPosition.z * 0.15 - worldPosition.x * 0.05);
+	        float displacementFactor = (heightOffset * 0.02) * wave * windStrength;
+	        vec2 windDirNorm = normalize(uWindDir);
+	        worldPosition.x += windDirNorm.x * displacementFactor;
+	        worldPosition.z += windDirNorm.y * displacementFactor;
+	    }
+	}
+
+	pass_pos = worldPosition.xz;
+	
+	gl_Position = projectionViewMatrix * worldPosition;
+	
+	gl_ClipDistance[0] = dot(worldPosition, plane);
+	
+	int col = int(textureOffsetIndex) % int(numberOfRows);
+	int row = int(textureOffsetIndex) / int(numberOfRows);
+	vec2 textureOffset = vec2(float(col)/numberOfRows, float(row)/numberOfRows);
+	pass_textureCoords = (in_textureCoords / numberOfRows) + textureOffset;
+	
+	vec3 actualNormal = in_normal;
+	if(useFakeLighting > 0.5) {
+		actualNormal = vec3(0.0, 1.0, 0.0);
+	}
+	
+	vec3 worldNormal = (transformationMatrix * vec4(actualNormal, 0.0)).xyz;
+
+	pass_brightness = max(dot(-lightDirection, normalize(worldNormal)), 0.0) * lightBrightness + ambientLight;
+	
+	pass_worldPos = worldPosition.xyz;
+	pass_normal = worldNormal;
+	pass_distanceToCamera = length(cameraPosition - worldPosition.xyz);
+    pass_shadowCoords = toShadowMapSpace * worldPosition;
+
+}

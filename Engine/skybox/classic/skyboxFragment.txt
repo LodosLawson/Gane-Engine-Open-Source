@@ -1,0 +1,42 @@
+#version 150
+
+in vec3 pass_textureCoords;
+in float pass_height;
+
+out vec4 out_colour;
+
+// Artik samplerCube degil, panorama (equirectangular) icin sampler2D kullaniyoruz.
+uniform sampler2D panoramaMap;
+
+// Kuresel koordinat donusumu icin sabitler
+const vec2 invAtan = vec2(0.1591549, 0.3183099); // vec2(1.0/(2.0*PI), 1.0/PI)
+
+vec2 sampleSphericalMap(vec3 v) {
+    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+    uv *= invAtan;
+    uv += 0.5;
+    return uv;
+}
+
+float smoothlyStep(float edge0, float edge1, float x){
+    float t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+    return t * t * (3.0 - 2.0 * t);
+}
+
+void main(void){
+
+	// Vektoru normalize edip kuresel UV koordinatlarina ceviriyoruz
+	vec2 uv = sampleSphericalMap(normalize(pass_textureCoords));
+	
+	// Fotografi duzeltmek (tersligi gidermek) icin Y eksenini cevir
+	uv.y = 1.0 - uv.y;
+	// İsteğe bağlı: Gökyüzü sağ/sol olarak da aynalanmışsa uv.x = 1.0 - uv.x; yapılabilir
+	uv.x = 1.0 - uv.x;
+	
+	out_colour = texture(panoramaMap, uv);
+	
+	// Ufuk cizgisine dogru hafif bir solma (fade) efekti (Istege bagli)
+	float fadeFactor = 1.0 - smoothlyStep(0.0, 10.0, pass_height);
+	out_colour = mix(out_colour, vec4(0.8, 0.9, 1.0, 1.0), fadeFactor * 0.3); // Ufuk rengine cok hafif karisim
+	
+}

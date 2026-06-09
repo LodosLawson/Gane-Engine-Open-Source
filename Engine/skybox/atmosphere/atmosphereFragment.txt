@@ -1,0 +1,264 @@
+#version 150
+
+in vec3 pass_worldPosition;
+in vec3 pass_localPosition;
+
+out vec4 out_colour;
+
+uniform vec3 sunPosition;
+uniform float atmosphereThickness;
+uniform vec3 skyColorDay;
+uniform vec3 skyColorSunset;
+uniform vec3 spaceColor;
+
+uniform vec3 cameraPosition;
+uniform float isSun;
+uniform vec3 planetCenter;
+
+// Bulut fizik verileri (per-draw -> per-instance'a dönüştürüldü)
+in float pass_cloudAlpha;   // 0-1: Bulutun gorunurlugu (dogus/olus fade)
+in float pass_cloudDensity; // 0-1: Karanlik yuzdesi (komsu bulutlarin etkisi)
+uniform float time;
+
+uniform float uFogDensity;
+uniform vec3 uFogColor;
+
+// --- YILDIZLAR IÇIN RASTGELELIK FONKSIYONU ---
+float hash3(vec3 p) {
+    p = fract(p * vec3(443.897, 441.423, 437.195));
+    p += dot(p, p.yxz + 19.19);
+    return fract((p.x + p.y) * p.z);
+}
+
+// --- 2D FBM NOISE ALGORITMASI ---
+float noise2d_hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
+float noise2d(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(noise2d_hash(i + vec2(0.0,0.0)), 
+                   noise2d_hash(i + vec2(1.0,0.0)), u.x),
+               mix(noise2d_hash(i + vec2(0.0,1.0)), 
+                   noise2d_hash(i + vec2(1.0,1.0)), u.x), u.y);
+}
+
+float fbm(vec2 p) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+    for (int i = 0; i < 4; i++) {
+        value += amplitude * noise2d(p * frequency);
+        frequency *= 2.0;
+        amplitude *= 0.5;
+    }
+    return value;
+}
+
+void main(void){
+    vec3 viewDir = normalize(pass_worldPosition - cameraPosition); // Kameradan objeye bakış yönü
+    vec3 sunDir = normalize(sunPosition - pass_worldPosition); // Objeden güneşe yön
+    
+    // Sis yogunlugu arttikca Gunesin kendisini ve parlamasini gizlemek icin bir maske (0 = gizli, 1 = net)
+    float fogMask = clamp(1.0 - uFogDensity * 0.5, 0.0, 1.0);
+    
+    if (isSun > 2.5) {
+        // ==========================================
+        // 4. UZAY VE YILDIZLAR KORESI (isSun = 3.0)
+        // ==========================================
+        vec3 viewDir = normalize(pass_localPosition);
+        
+        float starIntensity = hash3(floor(viewDir * 300.0));
+        float starBrightness = smoothstep(0.99, 1.0, starIntensity);
+        vec3 starColor = mix(vec3(0.8, 0.9, 1.0), vec3(1.0, 0.9, 0.8), hash3(floor(viewDir * 400.0) + vec3(1.0)));
+        vec3 finalStarColor = spaceColor + (starColor * starBrightness * 1.5); 
+        
+        // Eger kamera uzaya ciktiysa, Gunes'in parlakligindan oturu yildizlar silinir.
+        float distToCenter = length(cameraPosition - planetCenter);
+        float spaceFade = smoothstep(5000.0, 7000.0, distToCenter); 
+        finalStarColor = mix(finalStarColor, vec3(0.0), spaceFade);
+        
+        // Yildizlar yogun siste de gizlenmeli
+        out_colour = vec4(finalStarColor, fogMask);
+        return;
+    }
+
+    if (isSun > 1.5) {
+        // ==========================================
+        // 3. BULUT OBJESİ ÇİZİMİ (isSun = 2.0)
+        // ==========================================
+        vec3 localNormal = normalize(pass_localPosition);
+        
+        // Noise ile normal pertürbasyonu (bumpy, pofuduk yüzey detayları)
+        vec3 noiseOffset = vec3(
+            fbm(pass_worldPosition.xy * 0.01 + vec2(time * 0.04)) - 0.5,
+            fbm(pass_worldPosition.yz * 0.01 + vec2(time * 0.04)) - 0.5,
+            fbm(pass_worldPosition.xz * 0.01 + vec2(time * 0.04)) - 0.5
+        );
+        vec3 perturbedNormal = normalize(localNormal + noiseOffset * 0.45);
+        float sunDot = dot(perturbedNormal, sunDir);
+        
+        float sunHeight = normalize(sunPosition - planetCenter).y;
+        
+        vec3 baseCloudColor;
+        float minBrightness;
+        if (sunHeight >= 0.0) {
+            baseCloudColor = mix(skyColorSunset, vec3(0.95, 0.95, 0.95), clamp(sunHeight * 1.5, 0.0, 1.0));
+            minBrightness = 0.45;
+        } else {
+            float nightFactor = clamp(sunHeight * -5.0, 0.0, 1.0);
+            baseCloudColor = mix(skyColorSunset, vec3(0.05, 0.06, 0.1), nightFactor);
+            minBrightness = mix(0.45, 0.02, nightFactor);
+        }
+        
+        float brightness = max(minBrightness, sunDot * 0.5 + 0.5);
+        if (sunHeight < 0.0) {
+            float nightFactor = clamp(sunHeight * -5.0, 0.0, 1.0);
+            brightness = mix(brightness, minBrightness, nightFactor);
+        }
+        
+        // YoGunluk karanlatmasi: Bulutlar birbirini orttugunde renk koyulasor
+        // Asil bulut rengi + density ile kararma
+        vec3 darkColor = baseCloudColor * 0.65; // Maksimum karanlik ton
+        float clampedDensity = clamp(pass_cloudDensity, 0.0, 1.0);
+        baseCloudColor = mix(baseCloudColor, darkColor, clampedDensity);
+        
+        vec3 finalCloudColor = baseCloudColor * brightness;
+        
+        // Atmosferik derinlik
+        float distToCenter = length(cameraPosition - planetCenter);
+        float distFromCam = length(pass_worldPosition - cameraPosition);
+        
+        // Mesafe odakli sis (fog) - Ufuktaki bulutlar gokyuzu rengine bürünür
+        float fogFactor = clamp(distFromCam / 4500.0, 0.0, 1.0);
+        
+        vec3 atmosphereFogColor;
+        if (sunHeight >= 0.0) {
+            atmosphereFogColor = mix(skyColorSunset, skyColorDay, clamp(sunHeight * 2.0, 0.0, 1.0));
+        } else {
+            float nightFactor = clamp(sunHeight * -5.0, 0.0, 1.0);
+            atmosphereFogColor = mix(skyColorSunset, spaceColor, nightFactor);
+        }
+        
+        finalCloudColor = mix(finalCloudColor, atmosphereFogColor, fogFactor * 0.8);
+        
+        // Pofuduk kenarlarin alfa hesabi (noise ile kenar üzülmesi)
+        float viewDot = dot(perturbedNormal, -viewDir);
+        float noiseVal = fbm(pass_worldPosition.xz * 0.005 + vec2(time * 0.03)) * 0.6 
+                       + fbm(pass_localPosition.xz * 1.5) * 0.4;
+        
+        float edgeAlpha = smoothstep(0.12, 0.55, viewDot - (1.0 - noiseVal) * 0.35);
+        float baseAlpha = edgeAlpha * 0.85;
+        
+        // --- SONSUZLUK EFEKTI (INFINITE CLOUDS) ---
+        // Ufuktaki (uzaktaki) bulutlarin alphasini 0'a dusurerek spawn sinirini gizle
+        float distanceAlphaFade = 1.0 - smoothstep(3000.0, 4800.0, distFromCam);
+        
+        // Fizik sisteminden gelen dogus/olus fade'i ve uzaklik fade'ini uygula
+        float finalAlpha = baseAlpha * pass_cloudAlpha * distanceAlphaFade;
+        
+        // Yogun sise girdiklerinde bulutlar da gizlensin
+        out_colour = vec4(finalCloudColor, finalAlpha * fogMask);
+        return;
+    }
+
+    
+    if (isSun > 0.5) {
+        // ==========================================
+        // 2. GUNEŞ OBJESI CIZIMI (isSun = 1.0)
+        // ==========================================
+        vec3 localNormal = normalize(pass_localPosition);
+        float viewDot = max(0.0, dot(localNormal, -viewDir));
+        
+        // Merkeze dogru devasa parlama (Glow)
+        float glow = pow(viewDot, 2048.0);
+        float core = pow(viewDot, 8192.0);
+        
+        vec3 sunColor = vec3(1.2, 0.9, 0.5) * glow + vec3(2.0, 1.8, 1.5) * core;
+        // Yogun siste gunes maskelenir
+        out_colour = vec4(sunColor, fogMask);
+        return;
+    }
+
+    // ==========================================
+    // 1. GEZEGEN (ATMOSFER) ÇİZİMİ (isSun = 0.0)
+    // ==========================================
+    float distToCenter = length(cameraPosition - planetCenter);
+    vec3 normal = normalize(pass_worldPosition - planetCenter); // Kürenin yüzey normali (Merkez planetCenter olduğu için)
+
+    if (distToCenter < length(pass_worldPosition - planetCenter) - 100.0) {
+        // ---- KAMERA ATMOSFERİN İÇİNDE (İçeriden Dışarı Bakış) ----
+        
+        float heightFactor = max(0.0, normal.y); // Yukarı baktıkça 1.0, ufka baktıkça 0.0
+        float sunDot = dot(viewDir, normalize(sunPosition - cameraPosition)); // Güneşe bakıyor muyuz?
+        float sunHeight = normalize(sunPosition - planetCenter).y; // Güneşin ufka göre yüksekliği
+        
+        // Güneş ufka indikçe gökyüzünün rengi kızıla döner. Güneş battığında ise uzay rengine/karanlığa kaysın.
+        vec3 currentSkyColor;
+        vec3 zenithColor;
+        if (sunHeight >= 0.0) {
+            currentSkyColor = mix(skyColorSunset, skyColorDay, clamp(sunHeight * 2.0, 0.0, 1.0));
+            zenithColor = mix(spaceColor, skyColorDay * 0.4, clamp(sunHeight * 2.0, 0.0, 1.0));
+        } else {
+            // Güneş battıktan sonra (gece), ufuk rengi gün batımından uzay rengine doğru yavaşça kararsın (Örn: sunHeight -0.2'ye gelene kadar)
+            float nightFactor = clamp(sunHeight * -5.0, 0.0, 1.0); 
+            currentSkyColor = mix(skyColorSunset, spaceColor, nightFactor);
+            zenithColor = spaceColor;
+        }
+        
+        // Yukarı doğru baktıkça (heightFactor arttıkça) renk tepe rengine (Koyu Mavi veya Uzay) kaysın
+        vec3 finalColor = mix(currentSkyColor, zenithColor, pow(heightFactor, 0.8));
+        
+        // Güneş ufkun altına indikçe saçılmayı ve parlamayı sıfırla
+        // Ayrica eger sis cok yogunsa (fogMask < 1.0), gokyuzundeki gunes parlamasini da kes!
+        float sunVisibleFactor = clamp(sunHeight * 10.0 + 1.0, 0.0, 1.0) * fogMask; 
+        
+        // Güneş etrafında ekstra atmosferik saçılma
+        finalColor += mix(skyColorSunset, vec3(1.0, 0.9, 0.8), max(0.0, sunHeight)) * pow(max(0.0, sunDot), 16.0) * 0.15 * sunVisibleFactor;
+        
+        // Güneşin parlaklığı (Glow)
+        float sunGlow = pow(max(0.0, sunDot), 1024.0) * 0.25 * sunVisibleFactor; 
+        finalColor += vec3(1.0, 0.95, 0.85) * sunGlow;
+        
+        // --- UFUKTA SİS EFEKTİ İPTAL EDİLDİ ---
+        // Kullanıcı gökyüzünün ufka doğru gri olmamasını istedi, bu yüzden gökyüzü kendi doğal mavisinde kalacak.
+        
+        // --- GECE YILDIZLARIN GÖRÜNMESİ İÇİN ALFA (ŞEFFAFLIK) ---
+        // Gündüz gökyüzü opaktır (1.0), Gece ise şeffaflaşır ki arkadaki yıldız küresi görünsün
+        float nightAlpha = mix(1.0, 0.0, clamp(sunHeight * -4.0, 0.0, 1.0));
+        
+        out_colour = vec4(finalColor, nightAlpha);
+    } else {
+        // ---- KAMERA UZAYDA (Dışarıdan Gezegene Bakış) ----
+        
+        float sunDot = dot(normal, sunDir); // Yüzeye vuran güneş açısı
+        float viewDot = dot(normal, -viewDir); // Yüzeye bakış açısı (Kenarlar için)
+        
+        // Gece / Gündüz geçişi
+        float dayNight = smoothstep(-0.2, 0.2, sunDot); 
+        float sunsetFactor = smoothstep(-0.1, 0.1, sunDot) * (1.0 - smoothstep(0.1, 0.5, sunDot));
+        
+        // Atmosferin temel rengi (Gündüz mavi, gece siyah/uzay)
+        vec3 atmosphereColor = mix(spaceColor, skyColorDay, dayNight);
+        atmosphereColor = mix(atmosphereColor, skyColorSunset, sunsetFactor * 1.5); // Gün batımı kızıllığı
+        
+        // Kenar parlaklığı (Rim Light - Atmosferin kalın göründüğü yerler)
+        float rim = 1.0 - max(0.0, viewDot);
+        rim = smoothstep(0.0, 1.0, rim);
+        
+        // Işık alan tarafta parlama efekti (Scattering)
+        float scatter = rim * max(0.0, sunDot + 0.2) * atmosphereThickness * 1.5;
+        atmosphereColor += skyColorDay * scatter;
+        
+        // Şeffaflık (Alpha)
+        // Merkezde tamamen boş (siyah) görünmemesi için alt sınırı 0.35 yaptık. İçerisi gaz/atmosfer rengi ile dolu görünecek.
+        // Kenarlara doğru kalınlaştığı için 0.9'a kadar çıkacak.
+        float alpha = mix(0.35, 0.9, rim); 
+        alpha *= max(dayNight, 0.15); // Karanlık tarafta tamamen kaybolmasın, hafif silüeti kalsın
+        alpha = clamp(alpha + scatter, 0.0, 1.0);
+        
+        out_colour = vec4(atmosphereColor, alpha);
+    }
+}

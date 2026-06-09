@@ -1,0 +1,55 @@
+#version 150
+
+in vec2 textureCoords;
+out vec4 out_Colour;
+
+uniform sampler2D colourTexture;
+uniform float screenWidth;
+uniform float screenHeight;
+
+const float colorLevels = 8.0; // Daha yumuşak renk geçişleri
+const float edgeThreshold = 0.5; // Eşiği yükselttik, kaplamadaki ufak detaylar çizgi olmasın
+const float edgeThickness = 1.5; // Daha kalın, belirgin dış hatlar
+
+float luma(vec3 color) {
+    return dot(color, vec3(0.299, 0.587, 0.114));
+}
+
+void main(void){
+    float dx = edgeThickness / screenWidth;
+    float dy = edgeThickness / screenHeight;
+
+    // Luma üzerinden kenar tespiti (Kaplamaların içindeki gürültüleri yok sayar)
+    float s00 = luma(texture(colourTexture, textureCoords + vec2(-dx, -dy)).rgb);
+    float s10 = luma(texture(colourTexture, textureCoords + vec2( 0.0, -dy)).rgb);
+    float s20 = luma(texture(colourTexture, textureCoords + vec2( dx, -dy)).rgb);
+    float s01 = luma(texture(colourTexture, textureCoords + vec2(-dx,  0.0)).rgb);
+    float s21 = luma(texture(colourTexture, textureCoords + vec2( dx,  0.0)).rgb);
+    float s02 = luma(texture(colourTexture, textureCoords + vec2(-dx,  dy)).rgb);
+    float s12 = luma(texture(colourTexture, textureCoords + vec2( 0.0,  dy)).rgb);
+    float s22 = luma(texture(colourTexture, textureCoords + vec2( dx,  dy)).rgb);
+
+    float sobelX = s00 + 2.0*s01 + s02 - s20 - 2.0*s21 - s22;
+    float sobelY = s00 + 2.0*s10 + s20 - s02 - 2.0*s12 - s22;
+    
+    float edgeSq = (sobelX * sobelX) + (sobelY * sobelY);
+    
+    vec4 baseColor = texture(colourTexture, textureCoords);
+    
+    if(edgeSq > edgeThreshold){
+        // Koyu füme / siyah dış hat çizimi
+        out_Colour = vec4(0.1, 0.1, 0.1, baseColor.a);
+    } else {
+        // Posterize et (Renk paletini azalt)
+        vec3 c = baseColor.rgb;
+        c = pow(c, vec3(0.6)); // Renkleri düzleştir (Gamma düzeltmesi)
+        c = floor(c * colorLevels) / colorLevels;
+        c = pow(c, vec3(1.0 / 0.6)); // Geri al
+        
+        // Çizgi film havasını artırmak için renk doygunluğunu (Saturation) artır
+        float l = luma(c);
+        c = mix(vec3(l), c, 1.4); // Doygunluğu %40 artır
+
+        out_Colour = vec4(c, baseColor.a);
+    }
+}

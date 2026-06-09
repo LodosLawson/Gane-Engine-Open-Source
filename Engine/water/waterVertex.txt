@@ -1,0 +1,35 @@
+#version 150
+
+in vec2 position;
+
+out vec4 clipSpace;
+out vec2 textureCoords;
+out vec3 toCameraVector;
+out vec3 toLightVector;
+out vec4 projTexCoord;
+
+uniform mat4 projectionMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 modelMatrix;
+
+uniform vec3 cameraPosition;
+uniform vec3 lightPosition;
+
+void main(void) {
+    // Standard flat water plane calculation
+    vec4 worldPosition = modelMatrix * vec4(position.x, 0.0, position.y, 1.0);
+    
+    vec4 positionRelativeToCam = viewMatrix * worldPosition;
+    clipSpace = projectionMatrix * positionRelativeToCam;
+    gl_Position = clipSpace;
+    
+    // Calculate basic texture coords based on world position 
+    // Scaled down to prevent tiling artifacts
+    textureCoords = vec2(worldPosition.x / 40.0, worldPosition.z / 40.0);
+    
+    toCameraVector = cameraPosition - worldPosition.xyz;
+    toLightVector = lightPosition - worldPosition.xyz;
+    
+    // Pass clip space down for refraction/reflection projection
+    projTexCoord = clipSpace;
+}

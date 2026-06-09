@@ -1,0 +1,115 @@
+#version 150
+
+in vec4 clipSpace;
+in vec2 textureCoords;
+in vec3 toCameraVector;
+in vec3 toLightVector;
+in vec4 projTexCoord;
+
+out vec4 out_Color;
+
+uniform sampler2D reflectionTexture;
+uniform sampler2D refractionTexture;
+uniform sampler2D normalMap;
+uniform sampler2D depthMap;
+
+uniform float time;
+uniform vec3 baseColor;
+uniform float transparency;
+uniform float textureScale;
+
+uniform vec3 lightColor;
+uniform vec3 lightAmbient;
+
+uniform float nearPlane;
+uniform float farPlane;
+
+// Asylum Constants for wave normal maps
+const vec2 wavedir1 = vec2(-0.02, 0.0);
+const vec2 wavedir2 = vec2(0.0, -0.013);
+const vec2 wavedir3 = vec2(0.007, 0.007);
+const float ONE_OVER_4PI = 0.0795774715459476;
+
+void main(void) {
+    // 1. View and Light vectors
+    vec3 l = normalize(toLightVector);
+    vec3 v = normalize(toCameraVector);
+    vec3 h = normalize(l + v); 
+    
+    // 2. Projected Texture Coordinates
+    vec2 ndc = (projTexCoord.xy / projTexCoord.w) / 2.0 + 0.5;
+    vec2 refractTexCoords = vec2(ndc.x, ndc.y);
+    // Negative Y for reflection, depending on engine's inverted camera setup
+    vec2 reflectTexCoords = vec2(ndc.x, -ndc.y); 
+    
+    // 3. Normal Map Blending (Projected Water method)
+    vec3 n = vec3(0.0);
+    vec2 tex = textureCoords * textureScale; // Scale down for better visual flow
+    
+    n += (texture(normalMap, tex + time * wavedir1).rgb * 2.0 - 1.0) * 0.3;
+    n += (texture(normalMap, tex + time * wavedir2).rgb * 2.0 - 1.0) * 0.3;
+    n += (texture(normalMap, tex + time * wavedir3).rgb * 2.0 - 1.0) * 0.4;
+    
+    n = normalize(n);
+    // Convert Tangent Space (Z up) to World Space (Y up)
+    vec3 worldNormal = normalize(vec3(n.x, n.z, n.y));
+    
+    // 4. Fresnel term (Schlick's approximation)
+    float F0 = 0.020018673;
+    float ndotv = clamp(dot(worldNormal, v), 0.0, 1.0);
+    float F = F0 + (1.0 - F0) * pow(1.0 - ndotv, 5.0);
+    
+    // 5. Specular highlight (Ward BRDF)
+    float ndoth = max(dot(worldNormal, h), 0.001); // Prevent division by zero
+    float ndotl = clamp(dot(worldNormal, l), 0.0, 1.0);
+    
+    float rho = 0.3;
+    float ax = 0.2;
+    float ay = 0.1;
+    
+    vec3 x = cross(l, worldNormal);
+    vec3 y = cross(x, worldNormal);
+    
+    float mult = (ONE_OVER_4PI * rho / (ax * ay * sqrt(max(1e-5, ndotl * ndotv))));
+    float hdotx = dot(h, x) / ax;
+    float hdoty = dot(h, y) / ay;
+    
+    float spec = mult * exp(-((hdotx * hdotx) + (hdoty * hdoty)) / (ndoth * ndoth));
+    // Fallback if Ward goes crazy or is negative
+    spec = clamp(spec, 0.0, 10.0);
+    
+    // 6. Soft Edges using Depth Map
+    float depthValue = texture(depthMap, refractTexCoords).r;
+    float floorDistance = 2.0 * nearPlane * farPlane / (farPlane + nearPlane - (2.0 * depthValue - 1.0) * (farPlane - nearPlane));
+    
+    float depthZ = gl_FragCoord.z;
+    float waterDistance = 2.0 * nearPlane * farPlane / (farPlane + nearPlane - (2.0 * depthZ - 1.0) * (farPlane - nearPlane));
+    
+    float waterDepth = floorDistance - waterDistance;
+    
+    // Reduce distortion near the shore
+    vec3 r = reflect(-v, worldNormal);
+    vec2 distortion = worldNormal.xz * 0.02 * clamp(waterDepth / 20.0, 0.0, 1.0); 
+    
+    refractTexCoords += distortion;
+    refractTexCoords = clamp(refractTexCoords, 0.001, 0.999);
+    
+    reflectTexCoords += distortion;
+    reflectTexCoords.x = clamp(reflectTexCoords.x, 0.001, 0.999);
+    reflectTexCoords.y = clamp(reflectTexCoords.y, -0.999, -0.001);
+    
+    vec4 refrColor = texture(refractionTexture, refractTexCoords);
+    vec4 reflColor = texture(reflectionTexture, reflectTexCoords);
+    
+    // 7. Final Blending
+    // Combine base watercolor with refraction for depth simulation
+    vec3 finalRefr = mix(refrColor.rgb, baseColor, 0.4); 
+    
+    vec3 mixedColor = mix(finalRefr, reflColor.rgb, F);
+    
+    vec3 finalColor = mixedColor + (spec * lightColor * ndotl);
+    
+    float edgeAlpha = clamp(waterDepth / 5.0, 0.0, 1.0);
+    
+    out_Color = vec4(finalColor, edgeAlpha);
+}

@@ -1,0 +1,171 @@
+﻿package skybox;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
+
+import org.lwjgl.util.vector.Vector3f;
+import utils.ICamera;
+
+/**
+ * ProsedÃ¼rel, shader tabanlÄ± atmosferik gÃ¶kyÃ¼zÃ¼ modeli.
+ * Rengi gÃ¼neÅŸin konumuna ve atmosfer kalÄ±nlÄ±ÄŸÄ±na gÃ¶re dinamik hesaplanÄ±r.
+ * Bulutlar fizik simÃ¼lasyonu ile hareket eder.
+ */
+public class AtmosphereSky implements ISky {
+
+	// Renderer referansÄ± â€” MasterRenderer buraya inject eder
+	private AtmosphereRenderer renderer;
+
+	// ==============================================================
+	// BULUT FÄ°ZÄ°K SÄ°STEMÄ°
+	// ==============================================================
+	/** Aktif bulut kÃ¼meleri */
+	private List<CloudCluster> clusters = new ArrayList<>();
+	/** Toplam gecen suresi (turbulans icin) */
+	private float time = 0f;
+	/** Ruzgar yonu (normalize) */
+	private Vector3f windDir = new Vector3f(1f, 0f, 0.3f);
+	/** Ruzgar hizi (birim/saniye) */
+	private float windSpeed = 18f;
+	/** Kamera konumu (bulut spawn merkezi icin) */
+	private Vector3f cameraRef = new Vector3f();
+	/** Toplam uretilen bulut sayisi (seed icin benzersiz) */
+	private long clusterSeedCounter = 0;
+	/** Bulut havuzu boyutu */
+	private static final int MAX_CLUSTERS = 40;
+	/** Spawn alarti acikligi (saniye) */
+	private float spawnTimer = 0f;
+	private static final float SPAWN_INTERVAL = 4f;
+	/** Bulutlarin kameranin etrafinda olusacagi kare yaricapi */
+	private static final float SPAWN_RADIUS = 3500f;
+	/** Bulut yuksekliginin alt siniri */
+	private static final float CLOUD_MIN_Y = 4700f;
+	private static final float CLOUD_MAX_Y = 4950f;
+
+	public AtmosphereSky() {
+		// Ilk bulutlari hemen olustur (bos baslamamak icin)
+		for (int i = 0; i < 25; i++) {
+			spawnCluster(true);
+		}
+	}
+
+	/** Ruzgar yonunu ve hizini ayarla (Scene.getWindVelocity ile senkron tutulabilir) */
+	public void setWind(Vector3f wind) {
+		if (wind.lengthSquared() > 0.001f) {
+			windDir.set(wind);
+			windSpeed = windDir.length();
+			windDir.normalise();
+		} else {
+			windSpeed = 0f;
+		}
+	}
+
+	/**
+	 * Fizik simulasyonunu gunceller.
+	 * MasterRenderer veya AtmosphereRenderer tarafindan her frame cagirilmali.
+	 *
+	 * @param delta   Gecen sure (saniye)
+	 * @param camPos  Aktif kamera pozisyonu (spawn merkezi)
+	 */
+	public void update(float delta, Vector3f camPos) {
+		time += delta;
+		cameraRef.set(camPos);
+
+		normWind();
+
+		// Yakin bulut sayisini her kume icin hesapla (N^2 ama kume sayisi kucuk)
+		for (CloudCluster c : clusters) {
+			int nearby = 0;
+			for (CloudCluster other : clusters) {
+				if (c == other) continue;
+				float dx = c.position.x - other.position.x;
+				float dz = c.position.z - other.position.z;
+				float dist = (float)Math.sqrt(dx*dx + dz*dz);
+				if (dist < 600f) nearby++;
+			}
+			c.update(delta, windDir, windSpeed, time, nearby);
+		}
+
+		// Olu bulutlari sil
+		Iterator<CloudCluster> it = clusters.iterator();
+		while (it.hasNext()) {
+			if (it.next().isDead()) it.remove();
+		}
+
+		// Kamera uzaklasmis bulutlari oldurmek icin:
+		for (CloudCluster c : clusters) {
+			float dx = c.position.x - camPos.x;
+			float dz = c.position.z - camPos.z;
+			if ((float)Math.sqrt(dx*dx + dz*dz) > SPAWN_RADIUS * 1.6f) {
+				c.dying = true;
+			}
+		}
+
+		// Yeni bulut dogur
+		spawnTimer += delta;
+		if (clusters.size() < MAX_CLUSTERS && spawnTimer >= SPAWN_INTERVAL) {
+			spawnTimer = 0f;
+			spawnCluster(false);
+		}
+	}
+
+	private void spawnCluster(boolean scatter) {
+		Random rng = new Random(System.nanoTime() + clusterSeedCounter * 7919L);
+		long seed = clusterSeedCounter++;
+
+		float angle = rng.nextFloat() * 2f * (float)Math.PI;
+		float dist  = scatter
+			? rng.nextFloat() * SPAWN_RADIUS          // Ilk dolum: her yere dagit
+			: SPAWN_RADIUS * 0.6f + rng.nextFloat() * SPAWN_RADIUS * 0.4f; // Uzaktan gir
+
+		float x = cameraRef.x + (float)Math.cos(angle) * dist;
+		float z = cameraRef.z + (float)Math.sin(angle) * dist;
+		float y = CLOUD_MIN_Y + rng.nextFloat() * (CLOUD_MAX_Y - CLOUD_MIN_Y);
+
+		Vector3f wDir = new Vector3f(windDir);
+		if (wDir.lengthSquared() < 0.0001f) wDir.set(1f, 0f, 0f);
+
+		clusters.add(new CloudCluster(x, y, z, wDir, windSpeed, seed));
+	}
+
+	private void normWind() {
+		if (windDir.lengthSquared() > 0.0001f) windDir.normalise();
+	}
+
+	public List<CloudCluster> getClusters() { return clusters; }
+	public float getTime()                  { return time; }
+
+
+	/** ISky arayuzu: MasterRenderer tarafindan polymorphic olarak cagirilir. */
+	@Override
+	public void render(ICamera camera, Vector3f lightDir) {
+		if (renderer != null) {
+			renderer.render(this, camera, lightDir);
+		}
+	}
+
+	/** MasterRenderer bu atmosferin renderer'ini inject eder */
+	public void setRenderer(AtmosphereRenderer r) { this.renderer = r; }
+
+	// --- Getters / Setters ---
+	public Vector3f getSunPosition()       { return sunPosition; }
+	public float getAtmosphereThickness()  { return atmosphereThickness; }
+	public Vector3f getSkyColorDay()       { return skyColorDay; }
+	public Vector3f getSkyColorSunset()    { return skyColorSunset; }
+	public Vector3f getSpaceColor()        { return spaceColor; }
+	public boolean isCloudsEnabled()       { return cloudsEnabled; }
+
+	public void setSunPosition(Vector3f v)      { sunPosition = v; }
+	public void setAtmosphereThickness(float t) { atmosphereThickness = t; }
+	public void setSkyColorDay(Vector3f v)      { skyColorDay = v; }
+	public void setSkyColorSunset(Vector3f v)   { skyColorSunset = v; }
+	public void setSpaceColor(Vector3f v)       { spaceColor = v; }
+	public void setCloudsEnabled(boolean b)     { cloudsEnabled = b; }
+
+	@Override
+	public void cleanUp() {
+		// Atmosfer modeli sadece matematiksel
+	}
+}
